@@ -1,0 +1,2 @@
+beautifulsoup4=4.9.3=pyha847dfd_0
+requests=2.25.1=pyhd3eb1b0_0
