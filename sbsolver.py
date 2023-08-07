@@ -21,42 +21,60 @@ Created on Wed Apr 27 2020
 
 from json import loads
 from pathlib import Path
-from typing import List, Tuple
 
 from bs4 import BeautifulSoup
 from requests import get
 
 
-def game_data() -> Tuple[str, str, List[str]]:
+def game_data() -> tuple[str, str, list[str]]:
     """Scrape Spelling Bee data and return game date, letters, and answers."""
     page = get("https://www.nytimes.com/puzzles/spelling-bee")
     soup = BeautifulSoup(page.content, "html.parser")
-    data = loads(soup.script.string.strip("window.gameData = "))["today"]
+
+    data_tag = soup.find("script", string=lambda text: "window.gameData" in text)
+    data = loads(data_tag.string.strip("window.gameData = "))["today"]  # type: ignore
+
     return data["displayDate"], "".join(data["validLetters"]), data["answers"]
 
 
-def find_words(letters: str) -> List[str]:
-    """Return list of found valid words using letters."""
-    # Valid words are made from set(letters), contain letters[0], and have length >= 4.
-    words = []
-    with open(f"{Path(__file__).parent}\\twl06.txt") as word_list:
-        for word in word_list:
-            word = word.strip()
-            if set(word).issubset(letters) and letters[0] in word and len(word) >= 4:
-                words.append(word)
-    return words
+def find_words(letters: str) -> list[str]:
+    """
+    Return a list of valid words formed from the given letters.
+
+    A valid word must:
+    - Be composed solely of the provided letters
+    - Include the first letter from letters (the center letter)
+    - Contain at least 4 characters
+    """
+
+    center_letter = letters[0]
+    letter_set = set(letters)
+    wordlist_file = "twl06.txt"
+    wordlist_path = Path(__file__).parent / wordlist_file
+
+    with open(wordlist_path) as word_list:
+        return [
+            word
+            for line in word_list
+            if set(word := line.strip()) <= letter_set
+            if center_letter in word
+            if len(word) >= 4
+        ]
 
 
 def score(word: str, letters: str) -> str:
-    """Return string of word and its score."""
-    # 4-letter words are 1 point, longer words are 1 point per letter.
+    """
+    Return string of word and its score.
+    - 4-letter words are 1 point
+    - Longer words are 1 point per letter
+    - Words using all puzzle letters are worth 7 additional points
+    """
     points = 1 if len(word) == 4 else len(word)
-    # Words using all puzzle letters are worth 7 additional points.
     points += 7 if set(word) == set(letters) else 0
     return f"  {word} {points}"
 
 
-def print_words(desc: str, words: List[str], letters: str) -> None:
+def print_words(desc: str, words: list[str], letters: str) -> None:
     """Print count, description, and scored list of words."""
     output = [f"\n{len(words)} {desc}:\n"]
     line_len = 0
