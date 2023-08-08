@@ -48,8 +48,8 @@ def find_words(letters: str) -> list[str]:
     - Be at least 4 characters long
     """
 
-    center_letter = letters[0]
     letter_set = set(letters)
+    center_letter = letters[0]
     wordlist_file = "twl06.txt"
     wordlist_path = Path(__file__).parent / wordlist_file
 
@@ -92,14 +92,15 @@ def print_words(desc: str, words: list[str], letters: str) -> None:
     print("".join(output))
 
 
-def get_definitions(word: str, max_results: int = 4) -> list[str]:
+def get_definitions(word: str) -> list[str]:
     """Fetch synonyms for a given word using the Datamuse API."""
 
+    max_results = 4
     base_url = "https://api.datamuse.com/words"
     params = {
         "sp": word,
         "md": "d",
-        "max": max_results,
+        "max": 1,
     }
     response = get(base_url, params=params)
 
@@ -108,11 +109,8 @@ def get_definitions(word: str, max_results: int = 4) -> list[str]:
         return []
 
     data = response.json()
-    lookup = data[0].get("defs", ["<definition not found.>"])[:max_results]
-    definitions = [item.replace("\t", ". ") for item in lookup]
-
-    # definitions = list(dict.fromkeys(definitions))  # remove duplicate defs, preserving order
-    return definitions
+    lookup = data[0].get("defs", ["<definition not found>"])
+    return [item.replace("\t", ". ") for item in lookup[:max_results]]
 
 
 def print_definitions(words: list[str]) -> None:
