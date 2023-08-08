@@ -19,6 +19,7 @@ Todo:
 Created on Wed Apr 27 2020
 """
 
+import argparse
 from json import loads
 from pathlib import Path
 from textwrap import fill
@@ -134,9 +135,19 @@ def print_definitions(words: list[str]) -> None:
         )
 
 
-if __name__ == "__main__":
+def main(define: bool = False):
     date, letters, answers = game_data()
     print(f"\nNYT Spelling Bee Solver — {date} Letters: {letters.capitalize()}")
     print_words("possible words found", find_words(letters), letters)
     print_words("official answers", answers, letters)
-    print_definitions(answers)
+    if define:
+        print_definitions(answers)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Get word definitions.")
+    parser.add_argument("--define", action="store_true", help="Display definitions of the word.")
+
+    args = parser.parse_args()
+
+    main(args.define)
