@@ -21,6 +21,7 @@ Created on Wed Apr 27 2020
 
 from json import loads
 from pathlib import Path
+from textwrap import fill
 
 from bs4 import BeautifulSoup
 from requests import get
@@ -44,7 +45,7 @@ def find_words(letters: str) -> list[str]:
     A valid word must:
     - Be composed solely of the provided letters
     - Include the first letter from letters (the center letter)
-    - Contain at least 4 characters
+    - Be at least 4 characters long
     """
 
     center_letter = letters[0]
@@ -62,30 +63,77 @@ def find_words(letters: str) -> list[str]:
         ]
 
 
-def score(word: str, letters: str) -> str:
+def score(word: str, letters: str) -> int:
     """
-    Return string of word and its score.
+    Return int score of word using the following rules:
     - 4-letter words are 1 point
     - Longer words are 1 point per letter
-    - Words using all puzzle letters are worth 7 additional points
+    - Words using all puzzle letters are worth 7 additional points (pangram)
     """
     points = 1 if len(word) == 4 else len(word)
     points += 7 if set(word) == set(letters) else 0
-    return f"  {word} {points}"
+    return points
 
 
 def print_words(desc: str, words: list[str], letters: str) -> None:
-    """Print count, description, and scored list of words."""
-    output = [f"\n{len(words)} {desc}:\n"]
+    """Print count, description, and scored list of words. Display pangrams in bold and yellow."""
+    bold_yellow, reset = "\033[1m\033[93m", "\033[0m"
+    max_line_len = 70
     line_len = 0
+    output = [f"\n{len(words)} {desc}:\n"]
     for word in words:
-        scored = score(word, letters)
-        if line_len + len(scored) > 68:
+        scored = f"  {word} {score(word, letters)}"
+        if line_len + len(scored) > max_line_len:
             output.append("\n")
             line_len = 0
-        output.append(scored)
+        result = f"{bold_yellow}{scored}{reset}" if set(word) == set(letters) else scored
+        output.append(result)
         line_len += len(scored)
     print("".join(output))
+
+
+def get_definitions(word: str, max_results: int = 4) -> list[str]:
+    """Fetch synonyms for a given word using the Datamuse API."""
+
+    base_url = "https://api.datamuse.com/words"
+    params = {
+        "sp": word,
+        "md": "d",
+        "max": max_results,
+    }
+    response = get(base_url, params=params)
+
+    if response.status_code != 200:
+        print(f"Error {response.status_code}: Unable to fetch data.")
+        return []
+
+    data = response.json()
+    lookup = data[0].get("defs", ["<definition not found.>"])[:max_results]
+    definitions = [item.replace("\t", ". ") for item in lookup]
+
+    # definitions = list(dict.fromkeys(definitions))  # remove duplicate defs, preserving order
+    return definitions
+
+
+def print_definitions(words: list[str]) -> None:
+    max_line_len = 68
+    for word in words:
+        print(f"\n{word}")
+        output = []
+        definitions = get_definitions(word)
+        if len(definitions) == 1:
+            output = f"{definitions[0]}"
+        else:
+            for i, d in enumerate(get_definitions(word), 1):
+                output.append(f"{i}. {d}\n")
+        print(
+            fill(
+                "".join(output),
+                width=max_line_len,
+                initial_indent="  ",
+                subsequent_indent="  ",
+            )
+        )
 
 
 if __name__ == "__main__":
@@ -93,3 +141,4 @@ if __name__ == "__main__":
     print(f"\nNYT Spelling Bee Solver — {date} Letters: {letters.capitalize()}")
     print_words("possible words found", find_words(letters), letters)
     print_words("official answers", answers, letters)
+    print_definitions(answers)
