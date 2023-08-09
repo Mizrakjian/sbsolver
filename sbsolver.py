@@ -19,6 +19,10 @@ Implemented 08/2023:
 Implemented 08/2023
     Use async io to improve definition fetch time.
 
+TODO:
+    Restructure project to split functionality and improve readability.
+    Over time turn into a package?
+
 Created on Wed Apr 27 2020
 """
 
@@ -32,8 +36,9 @@ import httpx
 from bs4 import BeautifulSoup
 
 SCRIPT_LOCATION = Path(__file__).parent
-WORDLIST_FILE = SCRIPT_LOCATION / "twl06.txt"
-DEFINITIONS_FILE = SCRIPT_LOCATION / "definitions.json"
+DATA_PATH = SCRIPT_LOCATION / "data"
+WORDLIST_FILE = DATA_PATH / "word_list.txt"
+DEFINITIONS_FILE = DATA_PATH / "definitions.json"
 MAX_LINE_WIDTH = 72
 
 # type for JSON word definitions
