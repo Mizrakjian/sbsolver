@@ -13,8 +13,11 @@ online that could help with the game's unique format.  I saw early on that
 the answers were embedded in the game site code, but created the word-finding
 code anyway to to finish the project the way I originally planned.
 
-Todo:
+Implemented 08/2023:
     Add feature to retrieve, display, and locally cache short word definitions.
+
+TODO:
+    Use async io to improve definition fetch times.
 
 Created on Wed Apr 27 2020
 """
@@ -29,6 +32,9 @@ from requests import get
 
 SCRIPT_LOCATION = Path(__file__).parent
 MAX_LINE_WIDTH = 72
+
+# type for
+DefinitionMap = dict[str, dict[str, list[str]]]
 
 
 def game_data() -> tuple[str, str, list[str]]:
@@ -95,7 +101,15 @@ def print_words(desc: str, words: list[str], letters: str) -> None:
 
 
 def define(word: str) -> list[str]:
-    """Fetch definitions for a given word using the Datamuse API."""
+    """
+    Fetch a list of definitions for a given word using the Datamuse API.
+
+    Args:
+    - word (str): The word for which definitions are to be fetched.
+
+    Returns:
+    - list[str]: A list containing the definitions for the word.
+    """
 
     max_results = 4
     base_url = "https://api.datamuse.com/words"
@@ -115,40 +129,67 @@ def define(word: str) -> list[str]:
     return [item.replace("\t", ". ") for item in lookup[:max_results]]
 
 
-def get_definitions(words: list[str]) -> dict[str, list[str]]:
-    # Define a filename for your JSON definitions file
-    script_location = Path(__file__).parent
-    definitions_file = script_location / "definitions.json"
+def get_definitions(words: list[str]) -> DefinitionMap:
+    """
+    Fetch definitions for a list of words, checking and updating a local cache.
+
+    For each word in the list, the function checks if its definition is
+    already present in a local JSON file. If not, it fetches the definition
+    using the Datamuse API and updates the JSON file.
+
+    Args:
+    - words (list[str]): A list of words for which definitions are to be fetched.
+
+    Returns:
+    - dict: A dictionary where the key is the word and the value is a dictionary
+            with the key "defs" pointing to its definitions.
+    """
+    definitions_file = SCRIPT_LOCATION / "definitions.json"
 
     # Load existing definitions if the file exists
     if definitions_file.exists():
         with definitions_file.open("r") as f:
-            data = json.load(f)
+            defined_words = json.load(f)
     else:
-        data = {}
+        defined_words = {}
 
-    all_defs = {}
     for word in words:
-        if word not in data:
-            data[word] = {"defs": define(word)}
-        all_defs[word] = data[word]["defs"]
+        if word not in defined_words:
+            defined_words[word] = {"defs": define(word)}
 
     # Update the JSON file with new definitions
     with definitions_file.open("w") as f:
-        json.dump(data, f, indent=4)
+        json.dump(defined_words, f, indent=4)
 
-    return all_defs
+    return defined_words
 
 
-def print_definitions(lookup: dict[str, list[str]]) -> None:
-    for word, definitions in lookup.items():
-        if len(definitions) == 1:
-            output = definitions[0]
+def print_definitions(words: list[str], lookup: DefinitionMap) -> None:
+    """
+    Display the definitions of words from a lookup dictionary.
+
+    For each word in the list, the function fetches its definitions from
+    the lookup dictionary and prints them in a formatted manner.
+
+    Args:
+    - words (list[str]): A list of words for which definitions are to be displayed.
+    - lookup (dict): A dictionary containing the definitions of words.
+
+    Returns:
+    - None
+    """
+    for word in words:
+        defined = lookup[word]["defs"]
+        if len(defined) == 1:
+            output = defined[0]
         else:
-            output = [f"{i}. {d}" for i, d in enumerate(definitions, 1)]
+            output = (f"{i}. {d}" for i, d in enumerate(defined, 1))
 
         formatted = fill(
-            "".join(output), width=MAX_LINE_WIDTH, initial_indent="  ", subsequent_indent="  "
+            "".join(output),
+            width=MAX_LINE_WIDTH,
+            initial_indent="  ",
+            subsequent_indent="  ",
         )
         print(f"\n{word}\n{formatted}")
 
@@ -160,7 +201,7 @@ def main(define: bool = False):
     print_words("official answers", answers, letters)
     defined_words = get_definitions(answers)
     if define:
-        print_definitions(defined_words)
+        print_definitions(answers, defined_words)
 
 
 if __name__ == "__main__":
