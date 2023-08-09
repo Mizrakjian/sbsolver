@@ -194,13 +194,13 @@ def print_definitions(words: list[str], lookup: DefinitionMap) -> None:
         print(f"\n{word}\n{formatted}")
 
 
-def main(define: bool = False):
+def main(show_definitions: bool = False):
     date, letters, answers = game_data()
     print(f"\nNYT Spelling Bee Solver — {date} Letters: {letters.capitalize()}")
     print_words("possible words found", find_words(letters), letters)
     print_words("official answers", answers, letters)
     defined_words = get_definitions(answers)
-    if define:
+    if show_definitions:
         print_definitions(answers, defined_words)
 
 
