@@ -20,7 +20,7 @@ Implemented 08/2023
     Use async io to improve definition fetch time.
 
 TODO:
-    Restructure project to split functionality and improve readability.
+    Restructure project to modularize functionality and improve readability.
     Over time turn into a package?
 
 Created on Wed Apr 27 2020
@@ -32,8 +32,9 @@ import json
 from pathlib import Path
 from textwrap import fill
 
-import httpx
-from bs4 import BeautifulSoup
+from httpx import AsyncClient
+
+from game_data import game_data
 
 SCRIPT_LOCATION = Path(__file__).parent
 DATA_PATH = SCRIPT_LOCATION / "data"
@@ -43,17 +44,6 @@ MAX_LINE_WIDTH = 72
 
 # type for JSON word definitions
 DefinitionMap = dict[str, dict[str, list[str]]]
-
-
-def game_data() -> tuple[str, str, list[str]]:
-    """Scrape Spelling Bee data and return game date, letters, and answers."""
-    page = httpx.get("https://www.nytimes.com/puzzles/spelling-bee")
-    soup = BeautifulSoup(page.content, "html.parser")
-
-    data_tag = soup.find("script", string=lambda text: "window.gameData" in text)
-    data = json.loads(data_tag.string.strip("window.gameData = "))["today"]  # type: ignore
-
-    return data["displayDate"], "".join(data["validLetters"]), data["answers"]
 
 
 def find_words(letters: str) -> list[str]:
@@ -79,29 +69,34 @@ def find_words(letters: str) -> list[str]:
         ]
 
 
-def score(word: str, letters: str) -> int:
+def is_pangram(word: str) -> bool:
+    """Words using all 7 puzzle letters are pangrams."""
+    return len(set(word)) == 7
+
+
+def score(word: str) -> int:
     """
     Return int score of word using the following rules:
     - 4-letter words are 1 point
     - Longer words are 1 point per letter
-    - Words using all puzzle letters are worth 7 additional points (pangram)
+    - Words using all puzzle letters (pangrams) are worth 7 additional points
     """
     points = 1 if len(word) == 4 else len(word)
-    points += 7 if set(word) == set(letters) else 0
+    points += 7 if is_pangram(word) else 0
     return points
 
 
-def print_words(desc: str, words: list[str], letters: str) -> None:
+def print_words(desc: str, words: list[str]) -> None:
     """Print count, description, and scored list of words. Display pangrams in bold and yellow."""
     bold_yellow, reset = "\033[1m\033[93m", "\033[0m"
     line_len = 0
     output = [f"\n{len(words)} {desc}:\n"]
     for word in words:
-        scored = f"  {word} {score(word, letters)}"
+        scored = f"  {word} {score(word)}"
         if line_len + len(scored) > MAX_LINE_WIDTH:
             output.append("\n")
             line_len = 0
-        result = f"{bold_yellow}{scored}{reset}" if set(word) == set(letters) else scored
+        result = f"{bold_yellow}{scored}{reset}" if is_pangram(word) else scored
         output.append(result)
         line_len += len(scored)
     print("".join(output))
@@ -126,7 +121,7 @@ async def define(word: str, max_results: int = 4) -> list[str]:
         "max": 1,  # Fetch only one matching word from Datamuse
     }
 
-    async with httpx.AsyncClient() as client:
+    async with AsyncClient() as client:
         response = await client.get(base_url, params=params)
 
     if response.status_code != 200:
@@ -215,8 +210,8 @@ def print_definitions(words: list[str], lookup: DefinitionMap) -> None:
 def main(show_definitions: bool = False):
     date, letters, answers = game_data()
     print(f"\nNYT Spelling Bee Solver — {date} Letters: {letters.capitalize()}")
-    print_words("possible words found", find_words(letters), letters)
-    print_words("official answers", answers, letters)
+    print_words("possible words found", find_words(letters))
+    print_words("official answers", answers)
 
     defined_words = asyncio.run(get_definitions(answers))
 
