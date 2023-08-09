@@ -20,12 +20,15 @@ Created on Wed Apr 27 2020
 """
 
 import argparse
-from json import loads
+import json
 from pathlib import Path
 from textwrap import fill
 
 from bs4 import BeautifulSoup
 from requests import get
+
+SCRIPT_LOCATION = Path(__file__).parent
+MAX_LINE_WIDTH = 72
 
 
 def game_data() -> tuple[str, str, list[str]]:
@@ -34,7 +37,7 @@ def game_data() -> tuple[str, str, list[str]]:
     soup = BeautifulSoup(page.content, "html.parser")
 
     data_tag = soup.find("script", string=lambda text: "window.gameData" in text)
-    data = loads(data_tag.string.strip("window.gameData = "))["today"]  # type: ignore
+    data = json.loads(data_tag.string.strip("window.gameData = "))["today"]  # type: ignore
 
     return data["displayDate"], "".join(data["validLetters"]), data["answers"]
 
@@ -51,10 +54,9 @@ def find_words(letters: str) -> list[str]:
 
     letter_set = set(letters)
     center_letter = letters[0]
-    wordlist_file = "twl06.txt"
-    wordlist_path = Path(__file__).parent / wordlist_file
+    wordlist_file = SCRIPT_LOCATION / "twl06.txt"
 
-    with open(wordlist_path) as word_list:
+    with open(wordlist_file) as word_list:
         return [
             word
             for line in word_list
@@ -79,12 +81,11 @@ def score(word: str, letters: str) -> int:
 def print_words(desc: str, words: list[str], letters: str) -> None:
     """Print count, description, and scored list of words. Display pangrams in bold and yellow."""
     bold_yellow, reset = "\033[1m\033[93m", "\033[0m"
-    max_line_len = 70
     line_len = 0
     output = [f"\n{len(words)} {desc}:\n"]
     for word in words:
         scored = f"  {word} {score(word, letters)}"
-        if line_len + len(scored) > max_line_len:
+        if line_len + len(scored) > MAX_LINE_WIDTH:
             output.append("\n")
             line_len = 0
         result = f"{bold_yellow}{scored}{reset}" if set(word) == set(letters) else scored
@@ -93,8 +94,8 @@ def print_words(desc: str, words: list[str], letters: str) -> None:
     print("".join(output))
 
 
-def get_definitions(word: str) -> list[str]:
-    """Fetch synonyms for a given word using the Datamuse API."""
+def define(word: str) -> list[str]:
+    """Fetch definitions for a given word using the Datamuse API."""
 
     max_results = 4
     base_url = "https://api.datamuse.com/words"
@@ -114,25 +115,42 @@ def get_definitions(word: str) -> list[str]:
     return [item.replace("\t", ". ") for item in lookup[:max_results]]
 
 
-def print_definitions(words: list[str]) -> None:
-    max_line_len = 68
+def get_definitions(words: list[str]) -> dict[str, list[str]]:
+    # Define a filename for your JSON definitions file
+    script_location = Path(__file__).parent
+    definitions_file = script_location / "definitions.json"
+
+    # Load existing definitions if the file exists
+    if definitions_file.exists():
+        with definitions_file.open("r") as f:
+            data = json.load(f)
+    else:
+        data = {}
+
+    all_defs = {}
     for word in words:
-        print(f"\n{word}")
-        output = []
-        definitions = get_definitions(word)
+        if word not in data:
+            data[word] = {"defs": define(word)}
+        all_defs[word] = data[word]["defs"]
+
+    # Update the JSON file with new definitions
+    with definitions_file.open("w") as f:
+        json.dump(data, f, indent=4)
+
+    return all_defs
+
+
+def print_definitions(lookup: dict[str, list[str]]) -> None:
+    for word, definitions in lookup.items():
         if len(definitions) == 1:
-            output = f"{definitions[0]}"
+            output = definitions[0]
         else:
-            for i, d in enumerate(get_definitions(word), 1):
-                output.append(f"{i}. {d}\n")
-        print(
-            fill(
-                "".join(output),
-                width=max_line_len,
-                initial_indent="  ",
-                subsequent_indent="  ",
-            )
+            output = [f"{i}. {d}" for i, d in enumerate(definitions, 1)]
+
+        formatted = fill(
+            "".join(output), width=MAX_LINE_WIDTH, initial_indent="  ", subsequent_indent="  "
         )
+        print(f"\n{word}\n{formatted}")
 
 
 def main(define: bool = False):
@@ -140,13 +158,14 @@ def main(define: bool = False):
     print(f"\nNYT Spelling Bee Solver — {date} Letters: {letters.capitalize()}")
     print_words("possible words found", find_words(letters), letters)
     print_words("official answers", answers, letters)
+    defined_words = get_definitions(answers)
     if define:
-        print_definitions(answers)
+        print_definitions(defined_words)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Get word definitions.")
-    parser.add_argument("--define", action="store_true", help="Display definitions of the word.")
+    parser = argparse.ArgumentParser(description="Spelling Bee Solver")
+    parser.add_argument("--define", action="store_true", help="Display definitions for answer words.")
 
     args = parser.parse_args()
 
