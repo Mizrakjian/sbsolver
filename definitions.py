@@ -86,10 +86,11 @@ async def get_definitions(words: list[str]) -> DefinitionMap:
 
 
 def define_words(words: list[str]) -> DefinitionMap:
+    """Fetch definitions for the provided list of words asynchronously."""
     return asyncio.run(get_definitions(words))
 
 
-def print_definitions(words: list[str], lookup: DefinitionMap) -> None:
+def print_definitions(lookup: DefinitionMap) -> None:
     """
     Display the definitions of words from a lookup dictionary.
 
@@ -103,12 +104,13 @@ def print_definitions(words: list[str], lookup: DefinitionMap) -> None:
     Returns:
     - None
     """
-    for word in words:
-        defined = lookup[word]["defs"]
-        if len(defined) == 1:
-            output = defined[0]
-        else:
-            output = (f"{i}. {d}" for i, d in enumerate(defined, 1))
+    for word, defs in lookup.items():
+        defined = defs["defs"]
+
+        output = (
+            f"{i}. {d}" if len(defined) > 1 else d
+            for i, d in enumerate(defined, 1)
+        )  # fmt: skip
 
         definition = fill(
             "".join(output),
@@ -116,4 +118,5 @@ def print_definitions(words: list[str], lookup: DefinitionMap) -> None:
             initial_indent="  ",
             subsequent_indent="  ",
         )
+
         print(f"\n{word}\n{definition}")

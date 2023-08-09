@@ -40,7 +40,7 @@ def main(show_definitions: bool = False):
     defined_words = define_words(answers)
 
     if show_definitions:
-        print_definitions(answers, defined_words)
+        print_definitions(defined_words)
 
 
 if __name__ == "__main__":
