@@ -33,7 +33,7 @@ from requests import get
 SCRIPT_LOCATION = Path(__file__).parent
 MAX_LINE_WIDTH = 72
 
-# type for
+# type for JSON word definitions
 DefinitionMap = dict[str, dict[str, list[str]]]
 
 
@@ -158,8 +158,9 @@ def get_definitions(words: list[str]) -> DefinitionMap:
             defined_words[word] = {"defs": define(word)}
 
     # Update the JSON file with new definitions
-    with definitions_file.open("w") as f:
-        json.dump(defined_words, f, indent=4)
+    # Disable writing of definitions file so we always fetch from api
+    # with definitions_file.open("w") as f:
+    #     json.dump(defined_words, f, indent=4)
 
     return defined_words
 
