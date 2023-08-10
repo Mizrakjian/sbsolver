@@ -45,8 +45,12 @@ def main(show_definitions: bool = False):
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Spelling Bee Solver")
-    parser.add_argument("--define", action="store_true", help="Display definitions for answer words.")
-
+    parser.add_argument(
+        "-d",
+        "--define",
+        action="store_true",
+        help="Display definitions for answer words.",
+    )
     args = parser.parse_args()
 
     main(args.define)
