@@ -10,7 +10,7 @@ from constants import DEFINITIONS_FILE, MAX_LINE_WIDTH
 DefinitionMap = dict[str, dict[str, list[str]]]
 
 
-async def define(word: str, max_results: int = 4) -> list[str]:
+async def define(word: str) -> list[str]:
     """
     Fetch a list of definitions for a given word from the Datamuse API.
 
@@ -36,9 +36,7 @@ async def define(word: str, max_results: int = 4) -> list[str]:
         print(f"Error {response.status_code}: Unable to fetch data for {word}.")
         return []
 
-    lookup = response.json()[0].get("defs", ["<definition not found>"])
-
-    return [item.replace("\t", ". ") for item in lookup[:max_results]]
+    return response.json()[0].get("defs", [])
 
 
 def load_json_definitions() -> DefinitionMap:
@@ -90,7 +88,7 @@ def define_words(words: list[str]) -> DefinitionMap:
     return asyncio.run(get_definitions(words))
 
 
-def print_definitions(lookup: DefinitionMap) -> None:
+def print_definitions(lookup: DefinitionMap, max_entries: int = 4) -> None:
     """
     Display the definitions of words from a lookup dictionary.
 
@@ -98,22 +96,23 @@ def print_definitions(lookup: DefinitionMap) -> None:
     the lookup dictionary and prints them in a formatted manner.
 
     Args:
-    - words (list[str]): A list of words for which definitions are to be displayed.
-    - lookup (dict): A dictionary containing the definitions of words.
+    - lookup (dict): A dictionary containing words and definitions to be displayed.
+    - max_entries (int, optional): The maximum number of definitions to print. Defaults to 4.
 
     Returns:
     - None
     """
     for word, defs in lookup.items():
-        defined = defs["defs"]
+        definitions = defs["defs"][:max_entries]
+        entries = []
+        for i, d in enumerate(definitions, 1):
+            d = d.replace("\t", ". ")
+            entries.append(f"{i}. {d}" if len(definitions) > 1 else d)
 
-        output = (
-            f"{i}. {d}" if len(defined) > 1 else d
-            for i, d in enumerate(defined, 1)
-        )  # fmt: skip
+        definition_text = "".join(entries) or "<definition not found>"
 
         definition = fill(
-            "".join(output),
+            definition_text,
             width=MAX_LINE_WIDTH,
             initial_indent="  ",
             subsequent_indent="  ",
