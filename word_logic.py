@@ -1,4 +1,4 @@
-from constants import MAX_LINE_WIDTH, WORDLIST_FILE
+from constants import ADDENDUM_FILE, MAX_LINE_WIDTH, WORDLIST_FILE
 
 
 def find_words(letters: str) -> list[str]:
@@ -14,14 +14,32 @@ def find_words(letters: str) -> list[str]:
     letter_set = set(letters)
     center_letter = letters[0]
 
-    with open(WORDLIST_FILE) as word_list:
-        return [
-            word
-            for line in word_list
-            if set(word := line.strip()) <= letter_set
-            if center_letter in word
-            if len(word) >= 4
-        ]
+    with open(WORDLIST_FILE) as file:
+        word_list = set(line.strip() for line in file)
+
+    if ADDENDUM_FILE.exists():
+        with open(ADDENDUM_FILE) as file:
+            addendum = set(line.strip() for line in file)
+    else:
+        addendum = set()
+
+    combined = word_list | addendum
+
+    return sorted(
+        word
+        for word in combined
+        if set(word) <= letter_set
+        if center_letter in word
+        if len(word) >= 4
+    )  # fmt: skip
+
+
+def update_addendum(words: set[str]) -> None:
+    with open(ADDENDUM_FILE, "a") as file:
+        for word in words:
+            file.write(f"{word}\n")
+
+    print(f"  {words} added to addendum.")
 
 
 def is_pangram(word: str) -> bool:

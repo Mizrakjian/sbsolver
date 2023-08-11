@@ -1,5 +1,6 @@
 # auto-generated file, no need to track
-definitions.json
+data/definitions.json
+data/addendum.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

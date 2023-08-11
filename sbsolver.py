@@ -28,16 +28,21 @@ from argparse import ArgumentParser
 
 from definitions import define_words, print_definitions
 from game_data import game_data
-from word_logic import find_words, print_words
+from word_logic import find_words, print_words, update_addendum
 
 
 def main(show_definitions: bool = False):
     date, letters, answers = game_data()
+    found_words = find_words(letters)
+
     print(f"\nNYT Spelling Bee Solver — {date} Letters: {letters.capitalize()}")
-    print_words("possible words found", find_words(letters))
+    print_words("possible words found", found_words)
     print_words("official answers", answers)
 
     defined_words = define_words(answers)
+    new_words = set(answers) - set(found_words)
+    if new_words:
+        update_addendum(new_words)
 
     if show_definitions:
         print_definitions(defined_words)
