@@ -32,7 +32,7 @@ from word_logic import find_words, print_words, update_addendum
 
 
 def main(show_definitions: bool = False):
-    date, letters, answers = game_data()
+    date, letters, answers = game_data()[-1]  # [-1] to keep new game_data() from breaking main()
     found_words = find_words(letters)
 
     print(f"\nNYT Spelling Bee Solver — {date} Letters: {letters.capitalize()}")
