@@ -39,7 +39,7 @@ def update_addendum(words: set[str]) -> None:
         for word in words:
             file.write(f"{word}\n")
 
-    print(f"  {words} added to addendum.")
+    print(f"Added {words} to addendum.")
 
 
 def is_pangram(word: str) -> bool:
