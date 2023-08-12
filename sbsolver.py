@@ -26,7 +26,7 @@ Created on Wed Apr 27 2020
 
 from argparse import ArgumentParser
 
-from definitions import define_words, print_definitions
+from definitions import get_definitions, print_definitions
 from game_data import game_data
 from word_logic import find_words, print_words, update_addendum
 
@@ -39,7 +39,7 @@ def main(show_definitions: bool = False):
     print_words("possible words found", found_words)
     print_words("official answers", answers)
 
-    defined_words = define_words(answers)
+    defined_words = get_definitions(answers)
     new_words = set(answers) - set(found_words)
     if new_words:
         update_addendum(new_words)

@@ -4,29 +4,20 @@ from textwrap import fill
 
 from httpx import AsyncClient
 
-from constants import DEFINITIONS_FILE, MAX_LINE_WIDTH
+from constants import DATAMUSE_URL, DEFINITIONS_FILE, MAX_LINE_WIDTH
 
 # type for JSON word definitions
 DefinitionMap = dict[str, dict[str, list[str]]]
 
 
-async def define(word: str) -> list[str]:
-    """
-    Fetch a list of definitions for a given word from the Datamuse API.
+async def async_fetch_definitions(word: str) -> list[str]:
+    """Fetch and return a list of definitions for a given word from the Datamuse API."""
 
-    Args:
-    - word (str): The word to define.
-    - max_results (int, optional): Maximum number of definitions to return. Defaults to 4.
-
-    Returns:
-    - list[str]: A list of definitions.
-    """
-
-    base_url = "https://api.datamuse.com/words"
+    base_url = DATAMUSE_URL
     params = {
         "sp": word,
         "md": "d",
-        "max": 1,  # Fetch only one matching word from Datamuse
+        "max": 1,  # Fetch only one matching word
     }
 
     async with AsyncClient() as client:
@@ -37,6 +28,12 @@ async def define(word: str) -> list[str]:
         return []
 
     return response.json()[0].get("defs", [])
+
+
+async def async_definitions_batch_fetch(words: list[str]) -> dict[str, list[str]]:
+    """Fetch definitions for the provided list of words asynchronously."""
+    results = await asyncio.gather(*[async_fetch_definitions(word) for word in words])
+    return {word: result for word, result in zip(words, results)}
 
 
 def load_json_definitions() -> DefinitionMap:
@@ -51,7 +48,7 @@ def save_json_definitions(definitions: DefinitionMap) -> None:
         json.dump(definitions, f, indent=4)
 
 
-async def get_definitions(words: list[str]) -> DefinitionMap:
+def get_definitions(words: list[str]) -> DefinitionMap:
     """
     Define a list of words, checking and updating a local cache.
 
@@ -72,20 +69,16 @@ async def get_definitions(words: list[str]) -> DefinitionMap:
     if undefined:
         print(f"\nFetching {len(undefined)} new definitions... ", end="")
 
-        results = await asyncio.gather(*map(define, undefined))
+        results = asyncio.run(async_definitions_batch_fetch(list(undefined)))
 
         print("Done")
 
-        new_definitions = {w: {"defs": r} for w, r in zip(undefined, results)}
+        new_definitions = {w: {"defs": r} for w, r in results.items()}
+
         defined.update(new_definitions)
         save_json_definitions(defined)
 
     return {word: defined[word] for word in words}
-
-
-def define_words(words: list[str]) -> DefinitionMap:
-    """Fetch definitions for the provided list of words asynchronously."""
-    return asyncio.run(get_definitions(words))
 
 
 def print_definitions(lookup: DefinitionMap, max_entries: int = 4) -> None:
@@ -119,3 +112,15 @@ def print_definitions(lookup: DefinitionMap, max_entries: int = 4) -> None:
         )
 
         print(f"\n{word}\n{definition}")
+
+
+def update_definitions_json():
+    local_defs = load_json_definitions()
+    api_defs = asyncio.run(async_definitions_batch_fetch(list(local_defs)))
+
+    for word, defs in api_defs.items():
+        if defs != local_defs[word]["defs"]:
+            print(f"Updating local definition for {word}.")
+            local_defs[word]["defs"] = defs
+
+    save_json_definitions(local_defs)
