@@ -29,4 +29,4 @@ def game_data() -> list[GameData]:
         )
         for week in ("lastWeek", "thisWeek")
         for game in data["pastPuzzles"][week]
-    ]
+    ][::-1]

@@ -31,8 +31,34 @@ from game_data import game_data
 from word_logic import find_words, print_words, update_addendum
 
 
-def main(show_definitions: bool = False):
-    date, letters, answers = game_data()[-1]  # [-1] to keep new game_data() from breaking main()
+def parse_args():
+    parser = ArgumentParser(description="Spelling Bee Solver")
+    parser.add_argument(
+        "-s",
+        "--show",
+        action="store_true",
+        help="Show definitions for answer words.",
+    )
+    parser.add_argument(
+        "-d",
+        "--days",
+        type=int,
+        help="Use game letters and words from X days ago. 0 for today, 1 for yesterday, etc.",
+    )
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    game_history = game_data()
+
+    days_ago = args.days or 0
+    if days_ago < 0 or days_ago >= len(game_history):
+        print(f"{days_ago} is an invalid choice. The data only goes back {len(game_history)-1} days.")
+        exit()
+
+    date, letters, answers = game_history[days_ago]
     found_words = find_words(letters)
 
     print(f"\nNYT Spelling Bee Solver — {date} Letters: {letters.capitalize()}")
@@ -44,18 +70,9 @@ def main(show_definitions: bool = False):
     if new_words:
         update_addendum(new_words)
 
-    if show_definitions:
+    if args.show:
         print_definitions(defined_words)
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description="Spelling Bee Solver")
-    parser.add_argument(
-        "-d",
-        "--define",
-        action="store_true",
-        help="Display definitions for answer words.",
-    )
-    args = parser.parse_args()
-
-    main(args.define)
+    main()
