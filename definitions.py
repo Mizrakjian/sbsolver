@@ -6,11 +6,11 @@ from httpx import AsyncClient
 
 from constants import DATAMUSE_URL, DEFINITIONS_FILE, MAX_LINE_WIDTH
 
-# type for JSON word definitions
+# type for API word definitions
 DefinitionMap = dict[str, dict[str, list[str]]]
 
 
-async def async_fetch_definitions(word: str) -> list[str]:
+async def async_fetch_definitions(word: str) -> DefinitionMap:
     """Fetch and return a list of definitions for a given word from the Datamuse API."""
 
     base_url = DATAMUSE_URL
@@ -25,30 +25,31 @@ async def async_fetch_definitions(word: str) -> list[str]:
 
     if response.status_code != 200:
         print(f"Error {response.status_code}: Unable to fetch data for {word}.")
-        return []
+        return {}
 
-    return response.json()[0].get("defs", [])
+    return {word: {"defs": response.json()[0].get("defs", [])}}
 
 
-async def async_definitions_batch_fetch(words: list[str]) -> dict[str, list[str]]:
+async def async_batch_fetch_definitions(words: list[str]) -> DefinitionMap:
     """Fetch definitions for the provided list of words asynchronously."""
-    results = await asyncio.gather(*[async_fetch_definitions(word) for word in words])
-    return {word: result for word, result in zip(words, results)}
+    batch = [async_fetch_definitions(word) for word in words]
+    results = await asyncio.gather(*batch)
+    return {word: defs for entry in results for word, defs in entry.items()}
 
 
-def load_json_definitions() -> DefinitionMap:
+def load_definitions() -> DefinitionMap:
     if DEFINITIONS_FILE.exists():
         with DEFINITIONS_FILE.open("r") as f:
             return json.load(f)
     return {}
 
 
-def save_json_definitions(definitions: DefinitionMap) -> None:
+def save_definitions(definitions: DefinitionMap) -> None:
     with DEFINITIONS_FILE.open("w") as f:
         json.dump(definitions, f, indent=4)
 
 
-def get_definitions(words: list[str]) -> DefinitionMap:
+def define_words(words: list[str]) -> DefinitionMap:
     """
     Define a list of words, checking and updating a local cache.
 
@@ -63,44 +64,43 @@ def get_definitions(words: list[str]) -> DefinitionMap:
     - dict: A dictionary where the key is the word and the value is a dictionary
             with the key "defs" pointing to its definitions.
     """
-    defined = load_json_definitions()
+    defined = load_definitions()
     undefined = set(words) - set(defined.keys())
 
     if undefined:
         print(f"\nFetching {len(undefined)} new definitions... ", end="")
 
-        results = asyncio.run(async_definitions_batch_fetch(list(undefined)))
+        new_definitions = asyncio.run(async_batch_fetch_definitions(list(undefined)))
 
         print("Done")
 
-        new_definitions = {w: {"defs": r} for w, r in results.items()}
-
-        defined.update(new_definitions)
-        save_json_definitions(defined)
+        defined |= new_definitions
+        save_definitions(defined)
 
     return {word: defined[word] for word in words}
 
 
-def print_definitions(lookup: DefinitionMap, max_entries: int = 4) -> None:
+def print_definitions(words: DefinitionMap, max_entries: int = 4) -> None:
     """
-    Display the definitions of words from a lookup dictionary.
+    Display the definitions of words from a dictionary.
 
-    For each word in the list, the function fetches its definitions from
-    the lookup dictionary and prints them in a formatted manner.
+    The function prints each word in the dictionary, along with its definitions
+    in a formatted manner.
 
     Args:
-    - lookup (dict): A dictionary containing words and definitions to be displayed.
-    - max_entries (int, optional): The maximum number of definitions to print. Defaults to 4.
+    - words (dict): A dictionary containing words and definitions to be displayed.
+    - max_entries (int, optional): The maximum number of definitions per word to print.
+      Defaults to 4.
 
     Returns:
     - None
     """
-    for word, defs in lookup.items():
-        definitions = defs["defs"][:max_entries]
+    for word, defs in words.items():
+        defs = defs["defs"][:max_entries]
         entries = []
-        for i, d in enumerate(definitions, 1):
+        for i, d in enumerate(defs, start=1):
             d = d.replace("\t", ". ")
-            entries.append(f"{i}. {d}" if len(definitions) > 1 else d)
+            entries.append(f"{i}. {d}" if len(defs) > 1 else d)
 
         definition_text = "".join(entries) or "<definition not found>"
 
@@ -115,12 +115,12 @@ def print_definitions(lookup: DefinitionMap, max_entries: int = 4) -> None:
 
 
 def update_definitions_json():
-    local_defs = load_json_definitions()
-    api_defs = asyncio.run(async_definitions_batch_fetch(list(local_defs)))
+    local_defs = load_definitions()
+    api_defs = asyncio.run(async_batch_fetch_definitions(list(local_defs)))
 
     for word, defs in api_defs.items():
-        if defs != local_defs[word]["defs"]:
+        if local_defs[word]["defs"] != defs["defs"]:
             print(f"Updating local definition for {word}.")
-            local_defs[word]["defs"] = defs
+            local_defs[word]["defs"] = defs["defs"]
 
-    save_json_definitions(local_defs)
+    save_definitions(local_defs)

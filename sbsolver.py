@@ -26,7 +26,7 @@ Created on Wed Apr 27 2020
 
 from argparse import ArgumentParser
 
-from definitions import get_definitions, print_definitions
+from definitions import define_words, print_definitions
 from game_data import game_data
 from word_logic import find_words, print_words, update_addendum
 
@@ -37,7 +37,7 @@ def parse_args():
         "-s",
         "--show",
         action="store_true",
-        help="Show definitions for answer words.",
+        help="Show definitions for official answer words.",
     )
     parser.add_argument(
         "-d",
@@ -65,10 +65,11 @@ def main():
     print_words("possible words found", found_words)
     print_words("official answers", answers)
 
-    defined_words = get_definitions(answers)
     new_words = set(answers) - set(found_words)
     if new_words:
         update_addendum(new_words)
+
+    defined_words = define_words(answers)
 
     if args.show:
         print_definitions(defined_words)
