@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from constants import ADDENDUM_FILE, MAX_LINE_WIDTH, WORDLIST_FILE
 
 
@@ -24,19 +26,21 @@ def find_words(letters: str) -> list[str]:
     ]  # fmt: skip
 
 
+def words_from(word_file: Path) -> set[str]:
+    """Return set of words from a word file."""
+    if word_file.exists():
+        with open(word_file) as file:
+            return set(line.strip() for line in file)
+    else:
+        return set()
+
+
 def word_list() -> list[str]:
     """Return sorted list of known words by combining words from wordlist and addendum files."""
-
-    with open(WORDLIST_FILE) as file:
-        words = set(line.strip() for line in file)
-
-    if ADDENDUM_FILE.exists():
-        with open(ADDENDUM_FILE) as file:
-            addendum = set(line.strip() for line in file)
-    else:
-        addendum = set()
-
-    return sorted(words | addendum)
+    all_words = set()
+    for file in [WORDLIST_FILE, ADDENDUM_FILE]:
+        all_words |= words_from(file)
+    return sorted(all_words)
 
 
 def update_word_list(words: set[str]) -> None:
