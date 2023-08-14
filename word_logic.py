@@ -11,11 +11,24 @@ def find_words(letters: str) -> list[str]:
     - Be at least 4 characters long
     """
 
+    words = word_list()
     letter_set = set(letters)
     center_letter = letters[0]
 
+    return [
+        word
+        for word in words
+        if set(word) <= letter_set
+        if center_letter in word
+        if len(word) >= 4
+    ]  # fmt: skip
+
+
+def word_list() -> list[str]:
+    """Return sorted list of known words by combining words from wordlist and addendum files."""
+
     with open(WORDLIST_FILE) as file:
-        word_list = set(line.strip() for line in file)
+        words = set(line.strip() for line in file)
 
     if ADDENDUM_FILE.exists():
         with open(ADDENDUM_FILE) as file:
@@ -23,15 +36,7 @@ def find_words(letters: str) -> list[str]:
     else:
         addendum = set()
 
-    combined = word_list | addendum
-
-    return sorted(
-        word
-        for word in combined
-        if set(word) <= letter_set
-        if center_letter in word
-        if len(word) >= 4
-    )  # fmt: skip
+    return sorted(words | addendum)
 
 
 def update_word_list(words: set[str]) -> None:
@@ -62,8 +67,9 @@ def score(word: str) -> int:
 
 
 def print_words(desc: str, words: list[str]) -> None:
-    """Print count, description, and scored list of words. Display pangrams in bold and yellow."""
-    bold_yellow, reset = "\033[1m\033[93m", "\033[0m"
+    """Print count, description, and scored list of words. Highlight pangrams in bold yellow."""
+
+    highlight = lambda word: f"\033[1m\033[93m{word}\033[0m"
     line_len = 0
     output = [f"\n{len(words)} {desc}:\n"]
     for word in words:
@@ -71,7 +77,7 @@ def print_words(desc: str, words: list[str]) -> None:
         if line_len + len(scored) > MAX_LINE_WIDTH:
             output.append("\n")
             line_len = 0
-        result = f"{bold_yellow}{scored}{reset}" if is_pangram(word) else scored
+        result = f"{highlight(scored)}" if is_pangram(word) else scored
         output.append(result)
         line_len += len(scored)
     print("".join(output))
