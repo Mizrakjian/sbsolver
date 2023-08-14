@@ -28,7 +28,7 @@ from argparse import ArgumentParser
 
 from definitions import define_words, print_definitions
 from game_data import game_data
-from word_logic import find_words, print_words, update_addendum
+from word_logic import find_words, print_words, update_word_list
 
 
 def parse_args():
@@ -67,7 +67,7 @@ def main():
 
     new_words = set(answers) - set(found_words)
     if new_words:
-        update_addendum(new_words)
+        update_word_list(new_words)
 
     defined_words = define_words(answers)
 

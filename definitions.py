@@ -13,21 +13,20 @@ DefinitionMap = dict[str, dict[str, list[str]]]
 async def async_fetch_definitions(word: str) -> DefinitionMap:
     """Fetch and return a list of definitions for a given word from the Datamuse API."""
 
-    base_url = DATAMUSE_URL
     params = {
-        "sp": word,
-        "md": "d",
-        "max": 1,  # Fetch only one matching word
+        "sp": word,  # spelled-like query
+        "md": "d",  # definitions metadata flag
+        "max": 1,  # fetch one match only
     }
-
     async with AsyncClient() as client:
-        response = await client.get(base_url, params=params)
+        response = await client.get(DATAMUSE_URL, params=params)
 
-    if response.status_code != 200:
-        print(f"Error {response.status_code}: Unable to fetch data for {word}.")
-        return {}
+    data = response.json()
+    if response.status_code != 200 or not data:
+        print(f"  Unable to fetch data for {word} ({response.status_code=})")
+        return {word: {"defs": []}}
 
-    return {word: {"defs": response.json()[0].get("defs", [])}}
+    return {word: {"defs": data[0].get("defs", [])}}
 
 
 async def async_batch_fetch_definitions(words: list[str]) -> DefinitionMap:
@@ -68,14 +67,14 @@ def define_words(words: list[str]) -> DefinitionMap:
     undefined = set(words) - set(defined.keys())
 
     if undefined:
-        print(f"\nFetching {len(undefined)} new definitions... ", end="")
+        plural = "s" if len(undefined) > 1 else ""
+        print(f"\nFetching {len(undefined)} new definition{plural}:")
 
         new_definitions = asyncio.run(async_batch_fetch_definitions(list(undefined)))
-
-        print("Done")
-
         defined |= new_definitions
         save_definitions(defined)
+
+        print("  Done")
 
     return {word: defined[word] for word in words}
 
@@ -112,15 +111,3 @@ def print_definitions(words: DefinitionMap, max_entries: int = 4) -> None:
         )
 
         print(f"\n{word}\n{definition}")
-
-
-def update_definitions_json():
-    local_defs = load_definitions()
-    api_defs = asyncio.run(async_batch_fetch_definitions(list(local_defs)))
-
-    for word, defs in api_defs.items():
-        if local_defs[word]["defs"] != defs["defs"]:
-            print(f"Updating local definition for {word}.")
-            local_defs[word]["defs"] = defs["defs"]
-
-    save_definitions(local_defs)

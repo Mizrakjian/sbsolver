@@ -34,12 +34,14 @@ def find_words(letters: str) -> list[str]:
     )  # fmt: skip
 
 
-def update_addendum(words: set[str]) -> None:
+def update_word_list(words: set[str]) -> None:
     with open(ADDENDUM_FILE, "a") as file:
         for word in words:
             file.write(f"{word}\n")
 
-    print(f"Added {words} to addendum.")
+    plural = "s" if len(words) > 1 else ""
+    print(f"\n{len(words)} new word{plural} added:")
+    print(" ", *words)
 
 
 def is_pangram(word: str) -> bool:
