@@ -1,13 +1,14 @@
 import asyncio
 import json
+import sqlite3
 from textwrap import fill
 
 from httpx import AsyncClient
 
-from constants import DATAMUSE_URL, DEFINITIONS_FILE, MAX_LINE_WIDTH
+from constants import DATAMUSE_URL, MAX_LINE_WIDTH, WORDS_DB
 
 # type for API word definitions
-DefinitionMap = dict[str, dict[str, list[str]]]
+DefinitionMap = dict[str, list[str]]
 
 
 async def async_fetch_definitions(word: str) -> DefinitionMap:
@@ -24,28 +25,66 @@ async def async_fetch_definitions(word: str) -> DefinitionMap:
     data = response.json()
     if response.status_code != 200 or not data:
         print(f"  Unable to fetch data for {word} ({response.status_code=})")
-        return {word: {"defs": []}}
+        return {word: []}
 
-    return {word: {"defs": data[0].get("defs", [])}}
+    return {word: data[0].get("defs", [])}
 
 
 async def async_batch_fetch_definitions(words: list[str]) -> DefinitionMap:
     """Fetch definitions for the provided list of words asynchronously."""
     batch = [async_fetch_definitions(word) for word in words]
     results = await asyncio.gather(*batch)
-    return {word: defs for entry in results for word, defs in entry.items()}
+    return {
+        word: defs
+        for entry in results
+        for word, defs in entry.items()
+    }  # fmt: skip
 
 
-def load_definitions() -> DefinitionMap:
-    if DEFINITIONS_FILE.exists():
-        with DEFINITIONS_FILE.open("r") as f:
-            return json.load(f)
-    return {}
+def load_definitions(word_list: list[str]) -> DefinitionMap:
+    with sqlite3.connect(WORDS_DB) as conn:
+        cursor = conn.cursor()
+
+        placeholders = ", ".join("?" * len(word_list))
+        cursor.execute(
+            f"""
+            SELECT words.word, definitions.definition
+            FROM words
+            INNER JOIN definitions ON words.word_id = definitions.word_id
+            WHERE words.word IN ({placeholders})
+            """,
+            word_list,
+        )
+
+        definitions = {}
+        for word, definition in cursor.fetchall():
+            definitions.setdefault(word, []).append(definition)
+
+    return definitions
 
 
 def save_definitions(definitions: DefinitionMap) -> None:
-    with DEFINITIONS_FILE.open("w") as f:
-        json.dump(definitions, f, indent=4)
+    with sqlite3.connect(WORDS_DB) as conn:
+        cursor = conn.cursor()
+
+        word_rows = []
+        definition_rows = []
+
+        for word, defs in definitions.items():
+            cursor.execute("INSERT OR IGNORE INTO words (word) VALUES (?)", (word,))
+            cursor.execute("SELECT word_id FROM words WHERE word = ?", (word,))
+            word_id = cursor.fetchone()[0]
+            word_rows.append((word,))
+            for definition in defs:
+                definition_rows.append((word_id, definition))
+
+        cursor.executemany(
+            "INSERT OR IGNORE INTO definitions (word_id, definition) VALUES (?, ?)", definition_rows
+        )
+
+        plural = "s" if len(word_rows) > 1 else ""
+        print(f"\n{len(word_rows)} new word{plural} added:")
+        print(" ", *[row[0] for row in word_rows])
 
 
 def define_words(words: list[str]) -> DefinitionMap:
@@ -63,7 +102,7 @@ def define_words(words: list[str]) -> DefinitionMap:
     - dict: A dictionary where the key is the word and the value is a dictionary
             with the key "defs" pointing to its definitions.
     """
-    defined = load_definitions()
+    defined = load_definitions(words)
     undefined = set(words) - set(defined.keys())
 
     if undefined:
@@ -95,9 +134,8 @@ def print_definitions(words: DefinitionMap, max_entries: int = 4) -> None:
     - None
     """
     for word, defs in words.items():
-        defs = defs["defs"][:max_entries]
         entries = []
-        for i, d in enumerate(defs, start=1):
+        for i, d in enumerate(defs[:max_entries], start=1):
             d = d.replace("\t", ". ")
             entries.append(f"{i}. {d}" if len(defs) > 1 else d)
 

@@ -1,6 +1,9 @@
+import sqlite3
 from pathlib import Path
+from tkinter import WORD
 
-from constants import ADDENDUM_FILE, MAX_LINE_WIDTH, WORDLIST_FILE
+from constants import MAX_LINE_WIDTH, WORDS_DB
+from utils import create_words_db
 
 
 def find_words(letters: str) -> list[str]:
@@ -13,40 +16,38 @@ def find_words(letters: str) -> list[str]:
     - Be at least 4 characters long
     """
 
-    words = word_list()
-    letter_set = set(letters)
     center_letter = letters[0]
+    words = word_list(
+        includes=center_letter,
+        min_length=4,
+    )
+    letter_set = set(letters)
 
-    return [
-        word
-        for word in words
-        if set(word) <= letter_set
-        if center_letter in word
-        if len(word) >= 4
-    ]  # fmt: skip
-
-
-def words_from(word_file: Path) -> set[str]:
-    """Return set of words from a word file."""
-    if word_file.exists():
-        with open(word_file) as file:
-            return set(line.strip() for line in file)
-    else:
-        return set()
+    return [word for word in words if set(word) <= letter_set]
 
 
-def word_list() -> list[str]:
-    """Return sorted list of known words by combining words from wordlist and addendum files."""
-    all_words = set()
-    for file in [WORDLIST_FILE, ADDENDUM_FILE]:
-        all_words |= words_from(file)
-    return sorted(all_words)
+def word_list(*, includes: str, min_length: int) -> list[str]:
+    """
+    Return a list of words from the words database that:
+    * are at least min_length characters long.
+    * contain the includes letter.
+    """
+    if not WORDS_DB.exists():
+        create_words_db()
+
+    with sqlite3.connect(WORDS_DB) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            f"SELECT word FROM words WHERE LENGTH(word) >= ? AND word LIKE ?",
+            (min_length, f"%{includes}%"),
+        )
+        return [row[0] for row in cursor.fetchall()]
 
 
 def update_word_list(words: set[str]) -> None:
-    with open(ADDENDUM_FILE, "a") as file:
-        for word in words:
-            file.write(f"{word}\n")
+    with sqlite3.connect(WORDS_DB) as conn:
+        cursor = conn.cursor()
+        cursor.executemany("INSERT OR IGNORE INTO words (word) VALUES (?)", [(word,) for word in words])
 
     plural = "s" if len(words) > 1 else ""
     print(f"\n{len(words)} new word{plural} added:")
