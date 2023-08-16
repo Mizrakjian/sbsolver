@@ -28,6 +28,7 @@ from argparse import ArgumentParser
 
 from definitions import define_words, print_definitions
 from game_data import game_data
+from utils import show_db_stats
 from word_logic import find_words, print_words, update_word_list
 
 
@@ -45,6 +46,12 @@ def parse_args():
         type=int,
         help="Use game letters and words from X days ago. 0 for today, 1 for yesterday, etc.",
     )
+    parser.add_argument(
+        "--stats",
+        action="store_true",
+        help="Print statistics about the words database.",
+    )
+
     return parser.parse_args()
 
 
@@ -73,6 +80,9 @@ def main():
 
     if args.show:
         print_definitions(defined_words)
+
+    if args.stats:
+        show_db_stats()
 
 
 if __name__ == "__main__":

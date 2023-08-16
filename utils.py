@@ -136,6 +136,27 @@ def get_random_words_with_definitions(count=5):
             print(f"\n{word}:\n  {definitions}")
 
 
+def show_db_stats() -> None:
+    with sqlite3.connect(WORDS_DB) as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM words")
+        total_words = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(DISTINCT word_id) FROM definitions")
+        defined_words = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM definitions")
+        total_definitions = cursor.fetchone()[0]
+
+    print(
+        f"\n{WORDS_DB} stats:\n"
+        f"  {total_words = }\n"
+        f"  {defined_words = }\n"
+        f"  {total_definitions = }\n"
+    )
+
+
 if __name__ == "__main__":
     print(f"Number of words: {count_records_in_table('words')}")
     print(f"Number of definitions: {count_records_in_table('definitions')}")
