@@ -1,5 +1,4 @@
 import asyncio
-import json
 import sqlite3
 from textwrap import fill
 
@@ -92,8 +91,8 @@ def define_words(words: list[str]) -> DefinitionMap:
     Define a list of words, checking and updating a local cache.
 
     For each word in the list, the function checks if its definition is
-    already present in a local JSON file. If not, it fetches the definition
-    using the Datamuse API and updates the JSON file.
+    already present in a local db. If not, it fetches the definition
+    using the Datamuse API and updates the db.
 
     Args:
     - words (list[str]): The list of words to be defined.
