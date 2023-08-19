@@ -24,7 +24,7 @@ async def async_fetch_defs(word: str) -> DefinitionMap:
     data = response.json()
     if response.status_code != 200 or not data:
         print(f"  Unable to fetch data for {word} ({response.status_code=})")
-        return {word: []}
+        return {word: ["<definition not found>"]}
 
     return {word: data[0].get("defs", [])}
 
@@ -77,13 +77,17 @@ def save_definitions(definitions: DefinitionMap) -> None:
             cursor.execute("SELECT word_id FROM words WHERE word = ?", (word,))
             (word_id,) = cursor.fetchone()
 
-            defs_list = [(word_id, definition) for definition in defs]
-            cursor.executemany(
-                "INSERT OR IGNORE INTO definitions (word_id, definition) VALUES (?, ?)",
-                defs_list,
-            )
-            if cursor.rowcount:
-                defs_count += 1
+            cursor.execute("SELECT COUNT(*) FROM definitions WHERE word_id = ?", (word_id,))
+            (existing_definitions,) = cursor.fetchone()
+
+            if not existing_definitions:
+                defs_list = [(word_id, definition) for definition in defs]
+                cursor.executemany(
+                    "INSERT OR IGNORE INTO definitions (word_id, definition) VALUES (?, ?)",
+                    defs_list,
+                )
+                if cursor.rowcount:
+                    defs_count += 1
 
         plural = lambda count: "s" if count != 1 else ""
         word_count = len(new_words)

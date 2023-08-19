@@ -52,9 +52,8 @@ def populate_db(db_path, word_list):
         # Get the highest word_id
         cursor.execute("SELECT MAX(word_id) FROM words")
         (max_word_id,) = cursor.fetchone()
-
-        # Insert metadata
         creation_date = int(datetime.now().timestamp())
+
         cursor.executemany(
             "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
             [("creation_date", creation_date), ("initial_words_count", max_word_id)],
@@ -69,25 +68,16 @@ def create_words_db():
     print(f"Populated database with {len(word_list)} words from wordgamedictionary.com.")
 
 
-def get_random_words_with_definitions(count=5):
+def show_new_words():
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 
-        # Get the random words that have definitions
-        cursor.execute(
-            """
-            SELECT w.word
-            FROM words w
-            INNER JOIN definitions d ON d.word_id = w.word_id
-            GROUP BY w.word
-            ORDER BY RANDOM() LIMIT ?
-            """,
-            (count,),
-        )
-        words = [row[0] for row in cursor.fetchall()]
+        cursor.execute("SELECT value FROM metadata WHERE key = 'initial_words_count'")
+        initial_words = cursor.fetchone()
+        cursor.execute("SELECT word FROM words WHERE word_id > ?", initial_words)
+        new_words = cursor.fetchall()
 
-        # Get the definitions for the random words
-        for word in words:
+        for (word,) in new_words:
             cursor.execute(
                 """
                 SELECT GROUP_CONCAT(definition, ' ') AS definitions
@@ -96,7 +86,6 @@ def get_random_words_with_definitions(count=5):
                     FROM definitions d
                     INNER JOIN words w ON d.word_id = w.word_id
                     WHERE w.word = ?
-                    LIMIT 4
                 )
                 """,
                 (word,),
@@ -120,7 +109,7 @@ def show_db_stats() -> None:
         cursor.execute("SELECT COUNT(*) FROM words")
         (total_words,) = cursor.fetchone()
 
-        cursor.execute("SELECT value FROM metadata WHERE key = ?", ("initial_words_count",))
+        cursor.execute("SELECT value FROM metadata WHERE key = 'initial_words_count'")
         (initial_words_count,) = cursor.fetchone()
         cursor.execute("SELECT word FROM words WHERE word_id > ?", (initial_words_count,))
         new_words = cursor.fetchall()
@@ -150,12 +139,52 @@ def show_db_stats() -> None:
 
 if __name__ == "__main__":
     show_db_stats()
-    get_random_words_with_definitions(5)
+    show_new_words()
 
 
 # import asyncio
 # from pathlib import Path
 # from definitions import async_batch_fetch_definitions, load_definitions, save_definitions
+
+# def get_random_words_with_definitions(count=5):
+#     with sqlite3.connect(WORDS_DB) as conn:
+#         cursor = conn.cursor()
+
+#         # Get the random words that have definitions
+#         cursor.execute(
+#             """
+#             SELECT w.word
+#             FROM words w
+#             INNER JOIN definitions d ON d.word_id = w.word_id
+#             GROUP BY w.word
+#             ORDER BY RANDOM() LIMIT ?
+#             """,
+#             (count,),
+#         )
+#         words = [row[0] for row in cursor.fetchall()]
+
+#         # Get the definitions for the random words
+#         for word in words:
+#             cursor.execute(
+#                 """
+#                 SELECT GROUP_CONCAT(definition, ' ') AS definitions
+#                 FROM (
+#                     SELECT d.definition
+#                     FROM definitions d
+#                     INNER JOIN words w ON d.word_id = w.word_id
+#                     WHERE w.word = ?
+#                     LIMIT 4
+#                 )
+#                 """,
+#                 (word,),
+#             )
+#             definitions = fill(
+#                 cursor.fetchone()[0].replace("\t", ". "),
+#                 width=MAX_LINE_WIDTH,
+#                 initial_indent="  ",
+#                 subsequent_indent="  ",
+#             )
+#             print(f"\n{word}:\n{definitions}")
 
 # def update_definitions_json():
 #     local_defs = load_definitions()
