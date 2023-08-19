@@ -1,11 +1,13 @@
 import sqlite3
+from datetime import datetime
+from textwrap import fill
 
 import requests
 
-from constants import WORDLIST_URL, WORDS_DB
+from constants import MAX_LINE_WIDTH, WORDLIST_URL, WORDS_DB
 
 
-def fetch_wordlist():
+def fetch_wordlist() -> list[tuple[str]]:
     """Return list of words from wordgamedictionary.com's TWL06 scrabble word list."""
 
     response = requests.get(WORDLIST_URL)
@@ -13,38 +15,58 @@ def fetch_wordlist():
     return [(word.strip(),) for word in word_list[2:]]
 
 
-def create_db_tables(db_path):
+def create_db(db_path):
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
+
         cursor.execute(
             """
-        CREATE TABLE words (
-            word_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            word TEXT UNIQUE
-        )"""
+            CREATE TABLE words (
+                word_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word TEXT UNIQUE
+            )"""
         )
         cursor.execute(
             """
-        CREATE TABLE definitions (
-            definition_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            word_id INTEGER,
-            definition TEXT,
-            FOREIGN KEY(word_id) REFERENCES words(word_id)
-        )"""
+            CREATE TABLE definitions (
+                definition_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id INTEGER,
+                definition TEXT,
+                FOREIGN KEY(word_id) REFERENCES words(word_id)
+            )"""
+        )
+        cursor.execute(
+            """
+            CREATE TABLE metadata (
+                key TEXT PRIMARY KEY,
+                value INTEGER
+            )"""
         )
 
 
-def populate_words_table(db_path, word_list):
+def populate_db(db_path, word_list):
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.executemany("INSERT OR IGNORE INTO words (word) VALUES (?)", word_list)
-    print(f"Populated words table with words from the word list.")
+
+        # Get the highest word_id
+        cursor.execute("SELECT MAX(word_id) FROM words")
+        (max_word_id,) = cursor.fetchone()
+
+        # Insert metadata
+        creation_date = int(datetime.now().timestamp())
+        cursor.executemany(
+            "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
+            [("creation_date", creation_date), ("initial_words_count", max_word_id)],
+        )
 
 
 def create_words_db():
+    print(f"{WORDS_DB} file missing.\nCreating new database.")
+    create_db(WORDS_DB)
     word_list = fetch_wordlist()
-    create_db_tables(WORDS_DB)
-    populate_words_table(WORDS_DB, word_list)
+    populate_db(WORDS_DB, word_list)
+    print(f"Populated database with {len(word_list)} words from wordgamedictionary.com.")
 
 
 def get_random_words_with_definitions(count=5):
@@ -79,28 +101,50 @@ def get_random_words_with_definitions(count=5):
                 """,
                 (word,),
             )
-            definitions = cursor.fetchone()[0].replace("\t", ". ")
-            print(f"\n{word}:\n  {definitions}")
+            definitions = fill(
+                cursor.fetchone()[0].replace("\t", ". "),
+                width=MAX_LINE_WIDTH,
+                initial_indent="  ",
+                subsequent_indent="  ",
+            )
+            print(f"\n{word}:\n{definitions}")
 
 
 def show_db_stats() -> None:
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 
+        cursor.execute("SELECT value FROM metadata WHERE key = ?", ("creation_date",))
+        (creation_date,) = cursor.fetchone()
+
         cursor.execute("SELECT COUNT(*) FROM words")
-        total_words = cursor.fetchone()[0]
+        (total_words,) = cursor.fetchone()
+
+        cursor.execute("SELECT value FROM metadata WHERE key = ?", ("initial_words_count",))
+        (initial_words_count,) = cursor.fetchone()
+        cursor.execute("SELECT word FROM words WHERE word_id > ?", (initial_words_count,))
+        new_words = cursor.fetchall()
 
         cursor.execute("SELECT COUNT(DISTINCT word_id) FROM definitions")
-        defined_words = cursor.fetchone()[0]
+        (defined_words,) = cursor.fetchone()
 
         cursor.execute("SELECT COUNT(*) FROM definitions")
-        total_definitions = cursor.fetchone()[0]
+        (total_definitions,) = cursor.fetchone()
+
+    added_words = fill(
+        " ".join(word[0] for word in new_words),
+        width=MAX_LINE_WIDTH,
+        initial_indent="    ",
+        subsequent_indent="    ",
+    )
 
     print(
-        f"\n{WORDS_DB} stats:\n"
-        f"  {total_words = }\n"
-        f"  {defined_words = }\n"
-        f"  {total_definitions = }\n"
+        f"\nStats for {WORDS_DB}:\n"
+        f"  Creation date: {datetime.fromtimestamp(creation_date)}\n"
+        f"  Total words: {total_words}\n"
+        f"  Added words: {len(new_words)}\n{added_words}\n"
+        f"  Defined words count: {defined_words}\n"
+        f"  Total definitions: {total_definitions}\n"
     )
 
 

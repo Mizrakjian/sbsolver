@@ -14,7 +14,7 @@ class GameData(NamedTuple):
 
 
 def game_data() -> list[GameData]:
-    """Scrape Spelling Bee data and return game date, letters, and answers."""
+    """Scrape Spelling Bee data and return list of GameData entries in reverse order."""
     page = get(GAME_URL)
     soup = BeautifulSoup(page.content, "html.parser")
     tag = soup.find("script", string=lambda text: "window.gameData" in text)

@@ -29,7 +29,7 @@ from argparse import ArgumentParser
 from definitions import define_words, print_definitions
 from game_data import game_data
 from utils import show_db_stats
-from word_logic import find_words, print_words, update_word_list
+from word_logic import find_words, print_words
 
 
 def parse_args():
@@ -71,10 +71,6 @@ def main():
     print(f"\nNYT Spelling Bee Solver — {date} Letters: {letters.capitalize()}")
     print_words("possible words found", found_words)
     print_words("official answers", answers)
-
-    new_words = set(answers) - set(found_words)
-    if new_words:
-        update_word_list(new_words)
 
     defined_words = define_words(answers)
 

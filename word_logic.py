@@ -1,6 +1,4 @@
 import sqlite3
-from pathlib import Path
-from tkinter import WORD
 
 from constants import MAX_LINE_WIDTH, WORDS_DB
 from utils import create_words_db
@@ -29,8 +27,8 @@ def find_words(letters: str) -> list[str]:
 def word_list(*, includes: str, min_length: int) -> list[str]:
     """
     Return a list of words from the words database that:
-    * are at least min_length characters long.
     * contain the includes letter.
+    * are at least min_length characters long.
     """
     if not WORDS_DB.exists():
         create_words_db()
@@ -41,17 +39,7 @@ def word_list(*, includes: str, min_length: int) -> list[str]:
             f"SELECT word FROM words WHERE LENGTH(word) >= ? AND word LIKE ?",
             (min_length, f"%{includes}%"),
         )
-        return [row[0] for row in cursor.fetchall()]
-
-
-def update_word_list(words: set[str]) -> None:
-    with sqlite3.connect(WORDS_DB) as conn:
-        cursor = conn.cursor()
-        cursor.executemany("INSERT OR IGNORE INTO words (word) VALUES (?)", [(word,) for word in words])
-
-    plural = "s" if len(words) > 1 else ""
-    print(f"\n{len(words)} new word{plural} added:")
-    print(" ", *words)
+        return [word for (word,) in cursor.fetchall()]
 
 
 def is_pangram(word: str) -> bool:
