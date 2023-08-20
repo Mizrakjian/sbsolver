@@ -25,8 +25,7 @@ async def async_fetch_defs(word: str) -> DefinitionMap:
     if response.status_code != 200 or not data:
         print(f"  Unable to fetch data for {word} ({response.status_code=})")
         return {word: ["<definition not found>"]}
-
-    return {word: data[0].get("defs", [])}
+    return {word: data[0].get("defs", ["<definition not found>"])}
 
 
 async def async_batch_fetch(words: set[str]) -> DefinitionMap:
@@ -143,10 +142,9 @@ def print_definitions(words: DefinitionMap, max_entries: int = 4) -> None:
     for word, defs in words.items():
         entries = []
         for i, d in enumerate(defs[:max_entries], start=1):
-            d = d.replace("\t", ". ")
             entries.append(f"{i}. {d}" if len(defs) > 1 else d)
 
-        definition_text = "".join(entries) or "<definition not found>"
+        definition_text = "".join(entries).replace("\t", ". ")
 
         definition = fill(
             definition_text,

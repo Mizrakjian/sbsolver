@@ -114,6 +114,16 @@ def show_db_stats() -> None:
         cursor.execute("SELECT word FROM words WHERE word_id > ?", (initial_words_count,))
         new_words = cursor.fetchall()
 
+        cursor.execute(
+            """
+        SELECT w.word
+        FROM words w
+        INNER JOIN definitions d ON d.word_id = w.word_id
+        WHERE d.definition = "<definition not found>"
+        """
+        )
+        defs_not_found = cursor.fetchall()
+
         cursor.execute("SELECT COUNT(DISTINCT word_id) FROM definitions")
         (defined_words,) = cursor.fetchone()
 
@@ -126,12 +136,19 @@ def show_db_stats() -> None:
         initial_indent="    ",
         subsequent_indent="    ",
     )
+    bad_defs = fill(
+        " ".join(word[0] for word in defs_not_found),
+        width=MAX_LINE_WIDTH,
+        initial_indent="    ",
+        subsequent_indent="    ",
+    )
 
     print(
         f"\nStats for {WORDS_DB}:\n"
         f"  Creation date: {datetime.fromtimestamp(creation_date)}\n"
         f"  Total words: {total_words}\n"
         f"  Added words: {len(new_words)}\n{added_words}\n"
+        f"  Definitions not found: {len(defs_not_found)}\n{bad_defs}\n"
         f"  Defined words count: {defined_words}\n"
         f"  Total definitions: {total_definitions}\n"
     )
