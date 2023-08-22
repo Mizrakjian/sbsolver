@@ -36,7 +36,11 @@ def word_list(*, includes: str, min_length: int) -> list[str]:
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
         cursor.execute(
-            f"SELECT word FROM words WHERE LENGTH(word) >= ? AND word LIKE ?",
+            """
+            SELECT word
+            FROM words
+            WHERE LENGTH(word) >= ? AND word LIKE ?
+            """,
             (min_length, f"%{includes}%"),
         )
         return [word for (word,) in cursor.fetchall()]
