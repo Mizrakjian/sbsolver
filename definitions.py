@@ -66,20 +66,22 @@ def save_definitions(words: list[Word]) -> None:
             cursor.execute("INSERT OR IGNORE INTO words (word) VALUES (?)", (word.word,))
             if cursor.rowcount:
                 new_words.append(word.word)
-            cursor.execute("SELECT word_id FROM words WHERE word = ?", (word.word,))
-            (word_id,) = cursor.fetchone()
 
-            defs_list = [(word_id, definition) for definition in word.definitions]
+            defs = ((d, word.word) for d in word.definitions)
             cursor.executemany(
-                "INSERT OR IGNORE INTO definitions (word_id, definition) VALUES (?, ?)",
-                defs_list,
+                """
+                INSERT OR IGNORE INTO definitions (word_id, definition)
+                SELECT w.word_id, ?
+                FROM words w
+                WHERE w.word = ?
+                """,
+                defs,
             )
             if cursor.rowcount:
                 new_defs += 1
 
         plural = lambda count: "s" if count != 1 else ""
-        word_count = len(new_words)
-        if word_count:
+        if word_count := len(new_words):
             print(f"\n{word_count} new word{plural(word_count)} added:")
             print(" ", *new_words)
         if new_defs:
@@ -88,11 +90,12 @@ def save_definitions(words: list[Word]) -> None:
 
 def define(words: list[Word]) -> None:
     """
-    Define a list of words, checking and updating the local db.
+    Define a list of words and update the local db.
 
     For each word in the list, the function checks if its definition is
     already present in the local db. If not, it fetches the definition
-    using the Datamuse API and updates the db.
+    using the Datamuse API, updates each definitions attribute in the
+    Word list, and finally adds new definitions to the db.
 
     Args:
     - word_objects (list[Word]): The list of Word objects to be defined.
