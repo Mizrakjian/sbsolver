@@ -1,4 +1,5 @@
 from textwrap import fill
+from typing import Iterable
 
 from constants import MAX_LINE_WIDTH
 
@@ -41,8 +42,8 @@ class Word:
         self.score = self.calculate_score()
 
     @classmethod
-    def from_list(cls, words: list[str]) -> list["Word"]:
-        """Class method to return a list of Word objects from a list of word strings."""
+    def from_list(cls, words: Iterable[str]) -> list["Word"]:
+        """Class method to return a list of Word objects from an iterable of word strings."""
         return [cls(word) for word in words]
 
     def calculate_score(self):

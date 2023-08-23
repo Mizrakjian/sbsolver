@@ -5,6 +5,7 @@ from textwrap import fill
 import requests
 
 from constants import MAX_LINE_WIDTH, WORDLIST_URL, WORDS_DB
+from definitions import define
 from word import Word
 
 
@@ -76,20 +77,10 @@ def show_new_words():
         cursor.execute("SELECT value FROM metadata WHERE key = 'initial_words_count'")
         initial_words = cursor.fetchone()
         cursor.execute("SELECT word FROM words WHERE word_id > ?", initial_words)
-        new_words = cursor.fetchall()
-
-        for (word,) in new_words:
-            cursor.execute(
-                """
-                SELECT d.definition
-                FROM definitions d
-                INNER JOIN words w ON d.word_id = w.word_id
-                WHERE w.word = ?
-                """,
-                (word,),
-            )
-            definitions = [definition for definition, in cursor.fetchall()]
-            print(Word(word, definitions).with_definitions())
+        new_words = Word.from_list(word for (word,) in cursor.fetchall())
+        define(new_words)
+        for word in new_words:
+            print(word.with_definitions())
 
 
 def show_db_stats() -> None:
