@@ -1,20 +1,16 @@
 import asyncio
 import sqlite3
-from textwrap import fill
 
 from httpx import AsyncClient
 
-from constants import DATAMUSE_URL, MAX_LINE_WIDTH, WORDS_DB
-
-# type for API word definitions
-DefinitionMap = dict[str, list[str]]
+from constants import DATAMUSE_URL, WORDS_DB
+from word import Word
 
 
-async def async_fetch_defs(word: str) -> DefinitionMap:
-    """Fetch and return a list of definitions for a given word from the Datamuse API."""
-
+async def async_fetch_defs(word: Word) -> None:
+    """Fetch and set the definitions for a given Word object from the Datamuse API."""
     params = {
-        "sp": word,  # spelled-like query
+        "sp": word.word,  # spelled-like query
         "md": "d",  # definitions metadata flag
         "max": 1,  # fetch one match only
     }
@@ -22,27 +18,24 @@ async def async_fetch_defs(word: str) -> DefinitionMap:
         response = await client.get(url=DATAMUSE_URL, params=params)
 
     data = response.json()
-    if response.status_code != 200 or not data:
-        print(f"  Unable to fetch data for {word} ({response.status_code=})")
-        return {word: ["<definition not found>"]}
-    return {word: data[0].get("defs", ["<definition not found>"])}
+    if response.status_code == 200 and data and (defs := data[0].get("defs")):
+        word.definitions = defs
+    else:
+        print(f"  Unable to fetch data for {word.word} ({response.status_code=})")
+        word.definitions = ["<definition not found>"]
 
 
-async def async_batch_fetch(words: set[str]) -> DefinitionMap:
-    """Fetch definitions for the provided set of words asynchronously."""
-    batch = [async_fetch_defs(word) for word in words]
-    results = await asyncio.gather(*batch)
-    return {
-        word: defs
-        for entry in results
-        for word, defs in entry.items()
-    }  # fmt: skip
+async def async_batch_fetch(words: list[Word]) -> None:
+    """Fetch definitions for the provided list of Word objects asynchronously."""
+    batch = (async_fetch_defs(word) for word in words)
+    await asyncio.gather(*batch)
 
 
-def load_definitions(word_list: list[str]) -> DefinitionMap:
+def load_definitions(words: list[Word]) -> None:
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 
+        word_list = [word.word for word in words]
         placeholders = ", ".join("?" * len(word_list))
         cursor.execute(
             f"""
@@ -54,39 +47,34 @@ def load_definitions(word_list: list[str]) -> DefinitionMap:
             word_list,
         )
 
-        definitions = {}
+        definition_map = {}
         for word, definition in cursor.fetchall():
-            definitions.setdefault(word, []).append(definition)
+            definition_map.setdefault(word, []).append(definition)
 
-    return definitions
+        for word in words:
+            word.definitions = definition_map[word.word]
 
 
-def save_definitions(definitions: DefinitionMap) -> None:
+def save_definitions(words: list[Word]) -> None:
     new_words = []
     defs_count = 0
 
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 
-        for word, defs in definitions.items():
-            cursor.execute("INSERT OR IGNORE INTO words (word) VALUES (?)", (word,))
+        for word in words:
+            cursor.execute("INSERT OR IGNORE INTO words (word) VALUES (?)", (word.word,))
+            cursor.execute("SELECT word_id FROM words WHERE word = ?", (word.word,))
+            word_id = cursor.fetchone()[0]
             if cursor.rowcount:
-                new_words.append(word)
+                new_words.append(word.word)
 
-            cursor.execute("SELECT word_id FROM words WHERE word = ?", (word,))
-            (word_id,) = cursor.fetchone()
-
-            cursor.execute("SELECT COUNT(*) FROM definitions WHERE word_id = ?", (word_id,))
-            (existing_definitions,) = cursor.fetchone()
-
-            if not existing_definitions:
-                defs_list = [(word_id, definition) for definition in defs]
-                cursor.executemany(
-                    "INSERT OR IGNORE INTO definitions (word_id, definition) VALUES (?, ?)",
-                    defs_list,
-                )
-                if cursor.rowcount:
-                    defs_count += 1
+            defs_list = [(word_id, definition) for definition in word.definitions]
+            cursor.executemany(
+                "INSERT OR IGNORE INTO definitions (word_id, definition) VALUES (?, ?)",
+                defs_list,
+            )
+            defs_count += cursor.rowcount
 
         plural = lambda count: "s" if count != 1 else ""
         word_count = len(new_words)
@@ -97,60 +85,20 @@ def save_definitions(definitions: DefinitionMap) -> None:
             print(f"\nFetched {defs_count} new definition{plural(defs_count)}.")
 
 
-def define_words(words: list[str]) -> DefinitionMap:
+def define(words: list[Word]) -> None:
     """
-    Define a list of words, checking and updating a local db.
+    Define a list of words, checking and updating the local db.
 
     For each word in the list, the function checks if its definition is
-    already present in a local db. If not, it fetches the definition
+    already present in the local db. If not, it fetches the definition
     using the Datamuse API and updates the db.
 
     Args:
-    - words (list[str]): The list of words to be defined.
-
-    Returns:
-    - dict: A dictionary where the key is a word and the value
-            is a list of its definitions.
+    - word_objects (list[Word]): The list of Word objects to be defined.
     """
-    defined = load_definitions(words)
-    undefined = set(words) - set(defined.keys())
+    load_definitions(words)
+    undefined = [word for word in words if not word.definitions]
 
     if undefined:
-        api_definitions = asyncio.run(async_batch_fetch(undefined))
-        defined |= api_definitions
-        save_definitions(defined)
-
-    # Return definitions in same order as input
-    return {word: defined[word] for word in words}
-
-
-def print_definitions(words: DefinitionMap, max_entries: int = 4) -> None:
-    """
-    Display the definitions of words from a dictionary.
-
-    The function prints each word in the dictionary, along with its definitions
-    in a formatted manner.
-
-    Args:
-    - words (dict): A dictionary containing words and definitions to be displayed.
-    - max_entries (int, optional): The maximum number of definitions per word to print.
-      Defaults to 4.
-
-    Returns:
-    - None
-    """
-    for word, defs in words.items():
-        entries = []
-        for i, d in enumerate(defs[:max_entries], start=1):
-            entries.append(f"{i}. {d}" if len(defs) > 1 else d)
-
-        definition_text = "".join(entries).replace("\t", ". ")
-
-        definition = fill(
-            definition_text,
-            width=MAX_LINE_WIDTH,
-            initial_indent="  ",
-            subsequent_indent="  ",
-        )
-
-        print(f"\n{word}\n{definition}")
+        asyncio.run(async_batch_fetch(undefined))
+        save_definitions(undefined)

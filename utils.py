@@ -5,6 +5,7 @@ from textwrap import fill
 import requests
 
 from constants import MAX_LINE_WIDTH, WORDLIST_URL, WORDS_DB
+from word import Word
 
 
 def fetch_wordlist() -> list[tuple[str]]:
@@ -29,9 +30,9 @@ def create_db(db_path):
         cursor.execute(
             """
             CREATE TABLE definitions (
-                definition_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 word_id INTEGER,
                 definition TEXT,
+                UNIQUE (word_id, definition),
                 FOREIGN KEY(word_id) REFERENCES words(word_id)
             )"""
         )
@@ -80,23 +81,15 @@ def show_new_words():
         for (word,) in new_words:
             cursor.execute(
                 """
-                SELECT GROUP_CONCAT(definition, ' ') AS definitions
-                FROM (
-                    SELECT d.definition
-                    FROM definitions d
-                    INNER JOIN words w ON d.word_id = w.word_id
-                    WHERE w.word = ?
-                )
+                SELECT d.definition
+                FROM definitions d
+                INNER JOIN words w ON d.word_id = w.word_id
+                WHERE w.word = ?
                 """,
                 (word,),
             )
-            definitions = fill(
-                cursor.fetchone()[0].replace("\t", ". "),
-                width=MAX_LINE_WIDTH,
-                initial_indent="  ",
-                subsequent_indent="  ",
-            )
-            print(f"\n{word}:\n{definitions}")
+            definitions = [definition for definition, in cursor.fetchall()]
+            print(Word(word, definitions).with_definitions())
 
 
 def show_db_stats() -> None:
@@ -157,3 +150,6 @@ def show_db_stats() -> None:
 if __name__ == "__main__":
     show_db_stats()
     show_new_words()
+
+    with sqlite3.connect(WORDS_DB) as conn:
+        conn.execute("VACUUM")

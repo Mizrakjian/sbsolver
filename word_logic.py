@@ -2,9 +2,10 @@ import sqlite3
 
 from constants import MAX_LINE_WIDTH, WORDS_DB
 from utils import create_words_db
+from word import Word
 
 
-def find_words(letters: str) -> list[str]:
+def find_words(letters: str) -> list[Word]:
     """
     Return a list of valid words formed from the given letters.
 
@@ -21,7 +22,7 @@ def find_words(letters: str) -> list[str]:
     )
     letter_set = set(letters)
 
-    return [word for word in words if set(word) <= letter_set]
+    return [Word(word) for word in words if set(word) <= letter_set]
 
 
 def word_list(*, includes: str, min_length: int) -> list[str]:
@@ -46,35 +47,18 @@ def word_list(*, includes: str, min_length: int) -> list[str]:
         return [word for (word,) in cursor.fetchall()]
 
 
-def is_pangram(word: str) -> bool:
-    """Words using all 7 puzzle letters are pangrams."""
-    return len(set(word)) == 7
-
-
-def score(word: str) -> int:
-    """
-    Return int score of word using the following rules:
-    - 4-letter words are 1 point
-    - Longer words are 1 point per letter
-    - Words using all puzzle letters (pangrams) are worth 7 additional points
-    """
-    points = 1 if len(word) == 4 else len(word)
-    points += 7 if is_pangram(word) else 0
-    return points
-
-
-def print_words(desc: str, words: list[str]) -> None:
+def print_words(desc: str, words: list[Word]) -> None:
     """Print count, description, and scored list of words. Highlight pangrams in bold yellow."""
 
     highlight = lambda word: f"\033[1m\033[93m{word}\033[0m"
     line_len = 0
     output = [f"\n{len(words)} {desc}:\n"]
     for word in words:
-        scored = f"  {word} {score(word)}"
+        scored = f"  {word.word} {word.score}"
         if line_len + len(scored) > MAX_LINE_WIDTH:
             output.append("\n")
             line_len = 0
-        result = f"{highlight(scored)}" if is_pangram(word) else scored
+        result = f"{highlight(scored)}" if word.is_pangram else scored
         output.append(result)
         line_len += len(scored)
     print("".join(output))
