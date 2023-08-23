@@ -52,37 +52,38 @@ def load_definitions(words: list[Word]) -> None:
             definition_map.setdefault(word, []).append(definition)
 
         for word in words:
-            word.definitions = definition_map[word.word]
+            word.definitions = definition_map.get(word.word, [])
 
 
 def save_definitions(words: list[Word]) -> None:
     new_words = []
-    defs_count = 0
+    new_defs = 0
 
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 
         for word in words:
             cursor.execute("INSERT OR IGNORE INTO words (word) VALUES (?)", (word.word,))
-            cursor.execute("SELECT word_id FROM words WHERE word = ?", (word.word,))
-            word_id = cursor.fetchone()[0]
             if cursor.rowcount:
                 new_words.append(word.word)
+            cursor.execute("SELECT word_id FROM words WHERE word = ?", (word.word,))
+            (word_id,) = cursor.fetchone()
 
             defs_list = [(word_id, definition) for definition in word.definitions]
             cursor.executemany(
                 "INSERT OR IGNORE INTO definitions (word_id, definition) VALUES (?, ?)",
                 defs_list,
             )
-            defs_count += cursor.rowcount
+            if cursor.rowcount:
+                new_defs += 1
 
         plural = lambda count: "s" if count != 1 else ""
         word_count = len(new_words)
         if word_count:
             print(f"\n{word_count} new word{plural(word_count)} added:")
             print(" ", *new_words)
-        if defs_count:
-            print(f"\nFetched {defs_count} new definition{plural(defs_count)}.")
+        if new_defs:
+            print(f"\nFetched {new_defs} new definition{plural(new_defs)}.")
 
 
 def define(words: list[Word]) -> None:
