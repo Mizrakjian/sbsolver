@@ -28,6 +28,7 @@ from argparse import ArgumentParser
 
 from definitions import define
 from game_data import game_data
+from hints import hints
 from utils import show_db_stats
 from word import Word
 from word_logic import find_words, print_words
@@ -69,6 +70,8 @@ def main():
     puzzle = game_history[days_ago]
     found_words = find_words(puzzle.letters)
     answers = Word.from_list(puzzle.answers)
+
+    print(hints(answers, puzzle.letters))
 
     print(f"\nNYT Spelling Bee Solver — {puzzle.date} Letters: {puzzle.letters.capitalize()}")
     print_words("possible words found", found_words)

@@ -9,6 +9,11 @@ from definitions import define
 from word import Word
 
 
+def highlight(text: str) -> str:
+    """Return highlighted text with ANSI codes for bold and yellow."""
+    return f"\033[1;93m{text}\033[0m"
+
+
 def fetch_wordlist() -> list[tuple[str]]:
     """Return list of words from wordgamedictionary.com's TWL06 scrabble word list."""
 

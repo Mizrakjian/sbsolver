@@ -1,7 +1,7 @@
 import sqlite3
 
 from constants import MAX_LINE_WIDTH, WORDS_DB
-from utils import create_words_db
+from utils import create_words_db, highlight
 from word import Word
 
 
@@ -50,7 +50,6 @@ def word_list(*, includes: str, min_length: int) -> list[str]:
 def print_words(desc: str, words: list[Word]) -> None:
     """Print count, description, and scored list of words. Highlight pangrams in bold yellow."""
 
-    highlight = lambda word: f"\033[1m\033[93m{word}\033[0m"
     line_len = 0
     output = [f"\n{len(words)} {desc}:\n"]
     for word in words:
