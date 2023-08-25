@@ -21,7 +21,7 @@ def grid(words: list[Word]) -> str:
         Σ:  4  1  1  1  7
     """
     # Count word length frequency
-    length_count = Counter(len(w.word) for w in words)
+    length_count = Counter(len(w.text) for w in words)
     lengths, counts = zip(*sorted(length_count.items()))
 
     fmt_join = lambda items: " ".join(f"{i:>2}" for i in items)
@@ -29,7 +29,7 @@ def grid(words: list[Word]) -> str:
     footer = f"  ∑: {fmt_join(counts)} {len(words):>2}"
 
     # Count (first letter, word length) pair frequency
-    pairs = Counter((w.word[0], len(w.word)) for w in words)
+    pairs = Counter((w.text[0], len(w.text)) for w in words)
     by_letter = defaultdict(dict)
     for (letter, length), count in sorted(pairs.items()):
         by_letter[letter][length] = count
@@ -46,7 +46,7 @@ def grid(words: list[Word]) -> str:
 def two_letter_list(words: list[Word]) -> str:
     """Return word counts grouped by their first two letters."""
 
-    two_letter_counts = Counter(w.word[:2].upper() for w in words)
+    two_letter_counts = Counter(w.text[:2].upper() for w in words)
     sorted_pairs = sorted(two_letter_counts.items())
     first_letter = lambda x: x[0][0]
 
@@ -65,7 +65,7 @@ def pangrams(words: list[Word]) -> str:
     A perfect pangram uses all puzzle letters but only once each.
     """
 
-    pangram_list = [word.word for word in words if word.is_pangram]
+    pangram_list = [word.text for word in words if word.is_pangram]
     pangram_count = len(pangram_list)
     perfect_count = sum(len(p) == 7 for p in pangram_list)
     if pangram_count == perfect_count == 1:
@@ -84,7 +84,7 @@ def hints(words: list[Word], letters: str) -> str:
     puzzle_letters = " ".join([highlight(center), *outers])
     count = len(words)
     score = sum(w.score for w in words)
-    bingo = " Bingo," if len({w.word[0] for w in words}) == 7 else ""
+    bingo = " Bingo," if len({w.text[0] for w in words}) == 7 else ""
 
     output = [
         f"\nLetters: {puzzle_letters}",

@@ -10,7 +10,7 @@ from word import Word
 async def async_fetch_defs(word: Word) -> None:
     """Fetch and set the definitions for a given Word object from the Datamuse API."""
     params = {
-        "sp": word.word,  # spelled-like query
+        "sp": word.text,  # spelled-like query
         "md": "d",  # definitions metadata flag
         "max": 1,  # fetch one match only
     }
@@ -21,7 +21,7 @@ async def async_fetch_defs(word: Word) -> None:
     if response.status_code == 200 and data and (defs := data[0].get("defs")):
         word.definitions = defs
     else:
-        print(f"  Unable to fetch data for {word.word} ({response.status_code=})")
+        print(f"  Unable to fetch data for {word.text} ({response.status_code=})")
         word.definitions = ["<definition not found>"]
 
 
@@ -35,7 +35,7 @@ def load_definitions(words: list[Word]) -> None:
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 
-        word_list = [word.word for word in words]
+        word_list = [word.text for word in words]
         placeholders = ", ".join("?" * len(word_list))
         cursor.execute(
             f"""
@@ -52,7 +52,7 @@ def load_definitions(words: list[Word]) -> None:
             definition_map.setdefault(word, []).append(definition)
 
         for word in words:
-            word.definitions = definition_map.get(word.word, [])
+            word.definitions = definition_map.get(word.text, [])
 
 
 def save_definitions(words: list[Word]) -> None:
@@ -63,11 +63,11 @@ def save_definitions(words: list[Word]) -> None:
         cursor = conn.cursor()
 
         for word in words:
-            cursor.execute("INSERT OR IGNORE INTO words (word) VALUES (?)", (word.word,))
+            cursor.execute("INSERT OR IGNORE INTO words (word) VALUES (?)", (word.text,))
             if cursor.rowcount:
-                new_words.append(word.word)
+                new_words.append(word.text)
 
-            defs = ((d, word.word) for d in word.definitions)
+            defs = ((d, word.text) for d in word.definitions)
             cursor.executemany(
                 """
                 INSERT OR IGNORE INTO definitions (word_id, definition)

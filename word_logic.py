@@ -53,7 +53,7 @@ def show_words(desc: str, words: list[Word]) -> str:
     line_len = 0
     output = [f"\n{len(words)} {desc}:\n"]
     for word in words:
-        scored = f"  {word.word} {word.score}"
+        scored = f"  {word.text} {word.score}"
         if line_len + len(scored) > MAX_LINE_WIDTH:
             output.append("\n")
             line_len = 0

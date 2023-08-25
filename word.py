@@ -10,7 +10,7 @@ class Word:
     Represents a word with associated definitions, scoring, and pangram status.
 
     Attributes:
-        word (str): The word in lowercase.
+        text (str): The word in lowercase.
         definitions (list[str]): A list of definitions associated with the word.
         is_pangram (bool): True if the word uses all 7 puzzle letters, otherwise False.
         score (int): The score value of the word based on its length and pangram status.
@@ -37,9 +37,9 @@ class Word:
     """
 
     def __init__(self, word, definitions: list[str] | None = None):
-        self.word = word.lower()
+        self.text = word.lower()
         self.definitions = definitions or []
-        self.is_pangram = len(set(self.word)) == 7
+        self.is_pangram = len(set(self.text)) == 7
         self.score = self.calculate_score()
 
     @classmethod
@@ -54,7 +54,7 @@ class Word:
         - Longer words are 1 point per letter
         - Words using all puzzle letters (pangrams) are worth 7 additional points
         """
-        base_score = 1 if len(self.word) == 4 else len(self.word)
+        base_score = 1 if len(self.text) == 4 else len(self.text)
         pangram_bonus = 7 if self.is_pangram else 0
         return base_score + pangram_bonus
 
@@ -75,14 +75,13 @@ class Word:
             initial_indent="  ",
             subsequent_indent="  ",
         )
-        return f"\n{highlight(self.word) if self.is_pangram else self.word}\n{definitions}"
+        return f"\n{highlight(self.text) if self.is_pangram else self.text}\n{definitions}"
 
     def __repr__(self):
-        return f"Word('{self.word}', definitions={self.definitions})"
+        return f"Word('{self.text}', definitions={self.definitions})"
 
     def __str__(self):
-        pangram_str = " (Pangram)" if self.is_pangram else ""
-        return f"{self.with_definitions()}\n  Score: {self.score}{pangram_str}"
+        return f"{self.with_definitions()}"
 
     def __lt__(self, other: "Word") -> bool:
-        return self.word < other.word
+        return self.text < other.text

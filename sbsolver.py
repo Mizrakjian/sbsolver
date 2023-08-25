@@ -31,7 +31,7 @@ from game_data import game_data
 from hints import hints
 from utils import show_db_stats
 from word import Word
-from word_logic import find_words, show_words
+from word_logic import show_words
 
 
 def parse_args():
@@ -52,16 +52,18 @@ def parse_args():
     parser.add_argument(
         "-p",
         "--past",
+        metavar="n",
         nargs="?",
         type=int,
         const=None,
         default=0,
-        help="load past puzzles - use without a number to show available range.",
+        help="Load puzzle from [n] days ago - show available days if [n] is omitted",
     )
     parser.add_argument(
+        "-s",
         "--stats",
         action="store_true",
-        help="show statistics about the words database",
+        help="show database stats",
     )
     return parser.parse_args()
 
