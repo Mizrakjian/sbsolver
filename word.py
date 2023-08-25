@@ -82,3 +82,6 @@ class Word:
     def __str__(self):
         pangram_str = " (Pangram)" if self.is_pangram else ""
         return f"{self.with_definitions()}\n  Score: {self.score}{pangram_str}"
+
+    def __lt__(self, other: "Word") -> bool:
+        return self.word < other.word

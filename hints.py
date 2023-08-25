@@ -1,4 +1,7 @@
-from collections import Counter
+"""
+hints.py: functions to display Spelling Bee puzzle statistics and hints.
+"""
+from collections import Counter, defaultdict
 from itertools import groupby
 
 from utils import highlight
@@ -6,48 +9,83 @@ from word import Word
 
 
 def grid(words: list[Word]) -> str:
-    return ""
+    """
+    Generate a grid of word counts by initial letter and length.
 
+    Example:
+            3  4  5  6  Σ
+        A:  1  -  1  -  2
+        B:  1  -  -  1  2
+        C:  1  1  -  -  2
+        D:  1  -  -  -  1
+        Σ:  4  1  1  1  7
+    """
+    # Count word length frequency
+    length_count = Counter(len(w.word) for w in words)
+    lengths, counts = zip(*sorted(length_count.items()))
 
-# def two_letter_list(words: list[Word]) -> str:
-#     tll = [word.word[:2].upper() for word in words]
-#     tll_count = Counter(tll)
+    fmt_join = lambda items: " ".join(f"{i:>2}" for i in items)
+    header = f"   {fmt_join(lengths)}  ∑"
+    footer = f"∑: {fmt_join(counts)} {len(words):>2}"
 
-#     tll_sort = [f"{letters}-{tll_count[letters]}" for letters in sorted(set(tll))]
+    # Count (first letter, word length) pair frequency
+    pairs = Counter((w.word[0], len(w.word)) for w in words)
+    by_letter = defaultdict(dict)
+    for (letter, length), count in sorted(pairs.items()):
+        by_letter[letter][length] = count
 
-#     letter = ""
-#     pairs = []
-#     for pair in tll_sort:
-#         if pair[0] != letter:
-#             pairs.append("\n")
-#         pairs.append(pair)
-#         letter = pair[0]
+    rows = []
+    for letter, length_counts in by_letter.items():
+        counts = " ".join(f"{length_counts.get(l, '-'):>2}" for l in lengths)
+        total = f"{sum(length_counts.values()):>2}"
+        rows.append(f"{highlight(letter.upper())}: {counts} {highlight(total)}")
 
-#     return " ".join(pairs)
+    return "\n".join([highlight(header), *rows, highlight(footer)])
 
 
 def two_letter_list(words: list[Word]) -> str:
-    two_letter_counts = Counter(word.word[:2].upper() for word in words)
+    """Return word counts grouped by their first two letters."""
+
+    two_letter_counts = Counter(w.word[:2].upper() for w in words)
     sorted_pairs = sorted(two_letter_counts.items())
+    first_letter = lambda x: x[0][0]
 
-    grouped_strings = [
-        " ".join(f"{pair}-{count}" for pair, count in group)
-        for _, group in groupby(sorted_pairs, key=lambda x: x[0][0])
+    groups = [
+        " ".join(f"{letters}-{count}" for letters, count in group)
+        for _, group in groupby(sorted_pairs, key=first_letter)
     ]
+    return "\n".join([f"{highlight('Two letter list')}:\n", *groups])
 
-    return "\n".join(grouped_strings)
+
+def pangrams(words: list[Word]) -> str:
+    """Return the count of pangrams and perfect pangrams."""
+
+    pangram_list = [word.word for word in words if word.is_pangram]
+    pangram_count = len(pangram_list)
+    perfect_count = sum(len(p) == 7 for p in pangram_list)
+    if pangram_count == perfect_count == 1:
+        perfect = " (Perfect)"
+    elif pangram_count > 1 and perfect_count:
+        perfect = f" ({perfect_count} Perfect)"
+    else:
+        perfect = ""
+    return f"{pangram_count}{perfect}"
 
 
 def hints(words: list[Word], letters: str) -> str:
-    center_letter, *outer_letters = letters.upper()
-    highlighted_letters = " ".join([highlight(center_letter), *outer_letters])
+    """Provide hints and statistics for the given words and puzzle letters."""
+
+    center, *outers = letters.upper()
+    puzzle_letters = " ".join([highlight(center), *outers])
+    count = len(words)
+    score = sum(w.score for w in words)
+    bingo = " BINGO," if len({w.word[0] for w in words}) == 7 else ""
 
     output = [
-        f"Center letter is in {highlight('bold')}.\n",
-        f"{highlighted_letters}\n",
-        f"Words: {len(words)}, "
-        f"Points: {sum(word.score for word in words)}, "
-        f"Pangrams: {sum(word.is_pangram for word in words)}\n",
+        f"\nCenter letter is in {highlight('bold')}.",
+        f"{puzzle_letters}",
+        f"WORDS: {count}, POINTS: {score},{bingo} PANGRAMS: {pangrams(words)}",
+        grid(words),
         two_letter_list(words),
     ]
-    return "\n".join(output)
+    return "\n\n".join(output)

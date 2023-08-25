@@ -54,6 +54,12 @@ def parse_args():
         help="Print statistics about the words database.",
     )
 
+    parser.add_argument(
+        "--hints",
+        action="store_true",
+        help="Show hints for the puzzle, its word grid, and two-letter list.",
+    )
+
     return parser.parse_args()
 
 
@@ -71,13 +77,14 @@ def main():
     found_words = find_words(puzzle.letters)
     answers = Word.from_list(puzzle.answers)
 
-    print(hints(answers, puzzle.letters))
-
     print(f"\nNYT Spelling Bee Solver — {puzzle.date} Letters: {puzzle.letters.capitalize()}")
-    print_words("possible words found", found_words)
-    print_words("official answers", answers)
+    # print_words("possible words found", found_words)
+    # print_words("official answers", answers)
 
     define(answers)
+
+    if args.hints:
+        print(hints(answers, puzzle.letters))
 
     if args.show:
         for word in answers:
