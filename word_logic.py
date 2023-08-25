@@ -47,8 +47,8 @@ def word_list(*, includes: str, min_length: int) -> list[str]:
         return [word for (word,) in cursor.fetchall()]
 
 
-def print_words(desc: str, words: list[Word]) -> None:
-    """Print count, description, and scored list of words. Highlight pangrams in bold yellow."""
+def show_words(desc: str, words: list[Word]) -> str:
+    """Return count, description, and scored list of words. Highlight pangrams in bold yellow."""
 
     line_len = 0
     output = [f"\n{len(words)} {desc}:\n"]
@@ -60,4 +60,4 @@ def print_words(desc: str, words: list[Word]) -> None:
         result = f"{highlight(scored)}" if word.is_pangram else scored
         output.append(result)
         line_len += len(scored)
-    print("".join(output))
+    return "".join(output)

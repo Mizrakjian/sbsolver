@@ -2,6 +2,7 @@ from textwrap import fill
 from typing import Iterable
 
 from constants import MAX_LINE_WIDTH
+from utils import highlight
 
 
 class Word:
@@ -74,7 +75,7 @@ class Word:
             initial_indent="  ",
             subsequent_indent="  ",
         )
-        return f"\n{self.word}\n{definitions}"
+        return f"\n{highlight(self.word) if self.is_pangram else self.word}\n{definitions}"
 
     def __repr__(self):
         return f"Word('{self.word}', definitions={self.definitions})"

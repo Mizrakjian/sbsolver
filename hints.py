@@ -25,8 +25,8 @@ def grid(words: list[Word]) -> str:
     lengths, counts = zip(*sorted(length_count.items()))
 
     fmt_join = lambda items: " ".join(f"{i:>2}" for i in items)
-    header = f"   {fmt_join(lengths)}  ∑"
-    footer = f"∑: {fmt_join(counts)} {len(words):>2}"
+    header = f"     {fmt_join(lengths)}  ∑"
+    footer = f"  ∑: {fmt_join(counts)} {len(words):>2}"
 
     # Count (first letter, word length) pair frequency
     pairs = Counter((w.word[0], len(w.word)) for w in words)
@@ -38,7 +38,7 @@ def grid(words: list[Word]) -> str:
     for letter, length_counts in by_letter.items():
         counts = " ".join(f"{length_counts.get(l, '-'):>2}" for l in lengths)
         total = f"{sum(length_counts.values()):>2}"
-        rows.append(f"{highlight(letter.upper())}: {counts} {highlight(total)}")
+        rows.append(f"  {highlight(letter.upper())}: {counts} {highlight(total)}")
 
     return "\n".join([highlight(header), *rows, highlight(footer)])
 
@@ -51,14 +51,19 @@ def two_letter_list(words: list[Word]) -> str:
     first_letter = lambda x: x[0][0]
 
     groups = [
-        " ".join(f"{letters}-{count}" for letters, count in group)
+        "  " + " ".join(f"{letters}-{count}" for letters, count in group)
         for _, group in groupby(sorted_pairs, key=first_letter)
     ]
-    return "\n".join([f"{highlight('Two letter list')}:\n", *groups])
+    return "\n".join(["Two letter list:", *groups])
 
 
 def pangrams(words: list[Word]) -> str:
-    """Return the count of pangrams and perfect pangrams."""
+    """
+    Return the count of pangrams and perfect pangrams.
+
+    A pangram uses all puzzle letters.
+    A perfect pangram uses all puzzle letters but only once each.
+    """
 
     pangram_list = [word.word for word in words if word.is_pangram]
     pangram_count = len(pangram_list)
@@ -79,12 +84,11 @@ def hints(words: list[Word], letters: str) -> str:
     puzzle_letters = " ".join([highlight(center), *outers])
     count = len(words)
     score = sum(w.score for w in words)
-    bingo = " BINGO," if len({w.word[0] for w in words}) == 7 else ""
+    bingo = " Bingo," if len({w.word[0] for w in words}) == 7 else ""
 
     output = [
-        f"\nCenter letter is in {highlight('bold')}.",
-        f"{puzzle_letters}",
-        f"WORDS: {count}, POINTS: {score},{bingo} PANGRAMS: {pangrams(words)}",
+        f"\nLetters: {puzzle_letters}",
+        f"Words: {count}, Points: {score},{bingo} Pangrams: {pangrams(words)}",
         grid(words),
         two_letter_list(words),
     ]

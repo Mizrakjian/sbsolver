@@ -5,8 +5,6 @@ from textwrap import fill
 import requests
 
 from constants import MAX_LINE_WIDTH, WORDLIST_URL, WORDS_DB
-from definitions import define
-from word import Word
 
 
 def highlight(text: str) -> str:
@@ -76,6 +74,9 @@ def create_words_db():
 
 
 def show_new_words():
+    from definitions import define
+    from word import Word
+
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 

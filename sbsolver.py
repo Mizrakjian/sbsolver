@@ -31,35 +31,38 @@ from game_data import game_data
 from hints import hints
 from utils import show_db_stats
 from word import Word
-from word_logic import find_words, print_words
+from word_logic import find_words, show_words
 
 
 def parse_args():
     parser = ArgumentParser(description="Spelling Bee Solver")
+
     parser.add_argument(
-        "-s",
-        "--show",
+        "-a",
+        "--answers",
         action="store_true",
-        help="Show definitions for official answer words.",
+        help="show the puzzle answers",
     )
     parser.add_argument(
         "-d",
-        "--days",
+        "--define",
+        action="store_true",
+        help="show answer definitions",
+    )
+    parser.add_argument(
+        "-p",
+        "--past",
+        nargs="?",
         type=int,
-        help="Use game letters and words from X days ago. 0 for today, 1 for yesterday, etc.",
+        const=None,
+        default=0,
+        help="load past puzzles - use without a number to show available range.",
     )
     parser.add_argument(
         "--stats",
         action="store_true",
-        help="Print statistics about the words database.",
+        help="show statistics about the words database",
     )
-
-    parser.add_argument(
-        "--hints",
-        action="store_true",
-        help="Show hints for the puzzle, its word grid, and two-letter list.",
-    )
-
     return parser.parse_args()
 
 
@@ -67,26 +70,25 @@ def main():
     args = parse_args()
 
     game_history = game_data()
+    count = len(game_history) - 1
 
-    days_ago = args.days or 0
-    if days_ago < 0 or days_ago >= len(game_history):
-        print(f"{days_ago} is an invalid choice. The data only goes back {len(game_history)-1} days.")
+    days_ago = args.past
+    if days_ago is None or not (0 <= days_ago <= count):
+        print(f"There are {count} available past games. The oldest is from {game_history[-1].date}.")
         exit()
 
     puzzle = game_history[days_ago]
-    found_words = find_words(puzzle.letters)
     answers = Word.from_list(puzzle.answers)
 
-    print(f"\nNYT Spelling Bee Solver — {puzzle.date} Letters: {puzzle.letters.capitalize()}")
-    # print_words("possible words found", found_words)
-    # print_words("official answers", answers)
+    print(f"\nSpelling Bee Solver — {puzzle.date}")
 
+    print(hints(answers, puzzle.letters))
     define(answers)
 
-    if args.hints:
-        print(hints(answers, puzzle.letters))
+    if args.answers:
+        print(show_words("official answers", answers))
 
-    if args.show:
+    if args.define:
         for word in answers:
             print(word.with_definitions())
 
