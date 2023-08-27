@@ -4,6 +4,7 @@ import sqlite3
 from httpx import AsyncClient
 
 from constants import DATAMUSE_URL, WORDS_DB
+from utils import create_words_db
 from word import Word
 
 
@@ -32,11 +33,13 @@ async def async_batch_fetch(words: list[Word]) -> None:
 
 
 def load_definitions(words: list[Word]) -> None:
+    """Load definitions from WORDS_DB into the list of Word objects."""
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 
-        word_list = [word.text for word in words]
-        placeholders = ", ".join("?" * len(word_list))
+        lookup = {word.text: word for word in words}
+        placeholders = ", ".join("?" * len(lookup))
+
         cursor.execute(
             f"""
             SELECT words.word, definitions.definition
@@ -44,48 +47,33 @@ def load_definitions(words: list[Word]) -> None:
             INNER JOIN definitions ON words.word_id = definitions.word_id
             WHERE words.word IN ({placeholders})
             """,
-            word_list,
+            list(lookup.keys()),
         )
-
-        definition_map = {}
-        for word, definition in cursor.fetchall():
-            definition_map.setdefault(word, []).append(definition)
-
-        for word in words:
-            word.definitions = definition_map.get(word.text, [])
+        for word_text, definition in cursor:
+            lookup[word_text].definitions.append(definition)
 
 
 def save_definitions(words: list[Word]) -> None:
-    new_words = []
-    new_defs = 0
-
+    """Save new words and/or definitions from the list of Word objects to WORDS_DB."""
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 
-        for word in words:
-            cursor.execute("INSERT OR IGNORE INTO words (word) VALUES (?)", (word.text,))
-            if cursor.rowcount:
-                new_words.append(word.text)
+        cursor.executemany(
+            "INSERT OR IGNORE INTO words (word) VALUES (?)",
+            [(word.text,) for word in words],
+        )
+        if words_added := cursor.rowcount:
+            print(f"Words added: {words_added}\n")
 
-            defs = ((d, word.text) for d in word.definitions)
-            cursor.executemany(
-                """
-                INSERT OR IGNORE INTO definitions (word_id, definition)
-                SELECT w.word_id, ?
-                FROM words w
-                WHERE w.word = ?
-                """,
-                defs,
-            )
-            if cursor.rowcount:
-                new_defs += 1
-
-        plural = lambda count: "s" if count != 1 else ""
-        if word_count := len(new_words):
-            print(f"\n{word_count} new word{plural(word_count)} added:")
-            print(" ", *new_words)
-        if new_defs:
-            print(f"\nFetched {new_defs} new definition{plural(new_defs)}.")
+        cursor.executemany(
+            """
+            INSERT OR IGNORE INTO definitions (word_id, definition)
+            SELECT w.word_id, ?
+            FROM words w
+            WHERE w.word = ?
+            """,
+            [(d, w.text) for w in words for d in w.definitions],
+        )
 
 
 def define(words: list[Word]) -> None:
@@ -97,12 +85,19 @@ def define(words: list[Word]) -> None:
     using the Datamuse API, updates each definitions attribute in the
     Word list, and finally adds new definitions to the db.
 
+    Also creates the database if it isn't found.
+
     Args:
-    - word_objects (list[Word]): The list of Word objects to be defined.
+    - words (list[Word]): The list of Word objects to be defined.
     """
+    if not WORDS_DB.exists():
+        create_words_db()
+
     load_definitions(words)
     undefined = [word for word in words if not word.definitions]
 
     if undefined:
+        print(f"Definitions to fetch: {len(undefined)}")
         asyncio.run(async_batch_fetch(undefined))
+        print("  done\n")
         save_definitions(undefined)

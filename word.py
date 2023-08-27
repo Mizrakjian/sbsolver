@@ -75,7 +75,7 @@ class Word:
             initial_indent="  ",
             subsequent_indent="  ",
         )
-        return f"\n{highlight(self.text) if self.is_pangram else self.text}\n{definitions}"
+        return f"{highlight(self.text) if self.is_pangram else self.text}\n{definitions}"
 
     def __repr__(self):
         return f"Word('{self.text}', definitions={self.definitions})"

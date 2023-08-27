@@ -82,17 +82,17 @@ def main():
     puzzle = game_history[days_ago]
     answers = Word.from_list(puzzle.answers)
 
-    print(f"\nSpelling Bee Solver — {puzzle.date}")
-
-    print(hints(answers, puzzle.letters))
-    define(answers)
+    print(f"\nSpelling Bee Solver — {puzzle.date}\n")
+    print(hints(answers, puzzle.letters), "\n")
 
     if args.answers:
-        print(show_words("official answers", answers))
+        print(show_words("official answers", answers), "\n")
+
+    define(answers)
 
     if args.define:
         for word in answers:
-            print(word.with_definitions())
+            print(word.with_definitions(), "\n")
 
     if args.stats:
         show_db_stats()

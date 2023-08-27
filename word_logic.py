@@ -31,8 +31,6 @@ def word_list(*, includes: str, min_length: int) -> list[str]:
     * contain the includes letter.
     * are at least min_length characters long.
     """
-    if not WORDS_DB.exists():
-        create_words_db()
 
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
@@ -44,14 +42,14 @@ def word_list(*, includes: str, min_length: int) -> list[str]:
             """,
             (min_length, f"%{includes}%"),
         )
-        return [word for (word,) in cursor.fetchall()]
+        return [word for (word,) in cursor]
 
 
 def show_words(desc: str, words: list[Word]) -> str:
     """Return count, description, and scored list of words. Highlight pangrams in bold yellow."""
 
     line_len = 0
-    output = [f"\n{len(words)} {desc}:\n"]
+    output = [f"{len(words)} {desc}:\n"]
     for word in words:
         scored = f"  {word.text} {word.score}"
         if line_len + len(scored) > MAX_LINE_WIDTH:

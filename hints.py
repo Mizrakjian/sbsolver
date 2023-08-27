@@ -84,11 +84,11 @@ def hints(words: list[Word], letters: str) -> str:
     puzzle_letters = " ".join([highlight(center), *outers])
     count = len(words)
     score = sum(w.score for w in words)
-    bingo = " Bingo," if len({w.text[0] for w in words}) == 7 else ""
+    bingo = ", Bingo" if len({w.text[0] for w in words}) == 7 else ""
 
     output = [
-        f"\nLetters: {puzzle_letters}",
-        f"Words: {count}, Points: {score},{bingo} Pangrams: {pangrams(words)}",
+        f"Letters: {puzzle_letters}",
+        f"Words: {count}, Points: {score}, Pangrams: {pangrams(words)}{bingo}",
         grid(words),
         two_letter_list(words),
     ]

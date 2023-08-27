@@ -66,11 +66,13 @@ def populate_db(db_path, word_list):
 
 
 def create_words_db():
-    print(f"{WORDS_DB} file missing.\nCreating new database.")
+    print(f"{WORDS_DB} file missing\nCreating new database:")
     create_db(WORDS_DB)
+    print("  done\nFetching wordlist:")
     word_list = fetch_wordlist()
+    print("  done\nPopulating database:")
     populate_db(WORDS_DB, word_list)
-    print(f"Populated database with {len(word_list)} words from wordgamedictionary.com.")
+    print(f"  {len(word_list)} words added\n")
 
 
 def show_new_words():
@@ -83,7 +85,7 @@ def show_new_words():
         cursor.execute("SELECT value FROM metadata WHERE key = 'initial_words_count'")
         initial_words = cursor.fetchone()
         cursor.execute("SELECT word FROM words WHERE word_id > ?", initial_words)
-        new_words = Word.from_list(word for (word,) in cursor.fetchall())
+        new_words = Word.from_list(word for (word,) in cursor)
         define(new_words)
         for word in new_words:
             print(word.with_definitions())
@@ -134,7 +136,7 @@ def show_db_stats() -> None:
     )
 
     print(
-        f"\nStats for {WORDS_DB}:\n"
+        f"Stats for {WORDS_DB}:\n"
         f"  Creation date: {datetime.fromtimestamp(creation_date)}\n"
         f"  Total words: {total_words}\n"
         f"  Added words: {len(new_words)}\n{added_words}\n"
