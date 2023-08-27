@@ -2,7 +2,7 @@ import sqlite3
 from datetime import datetime
 from textwrap import fill
 
-import requests
+import httpx
 
 from constants import MAX_LINE_WIDTH, WORDLIST_URL, WORDS_DB
 
@@ -15,7 +15,7 @@ def highlight(text: str) -> str:
 def fetch_wordlist() -> list[tuple[str]]:
     """Return list of words from wordgamedictionary.com's TWL06 scrabble word list."""
 
-    response = requests.get(WORDLIST_URL)
+    response = httpx.get(WORDLIST_URL)
     word_list = response.text.split("\n")
     return [(word.strip(),) for word in word_list[2:]]
 

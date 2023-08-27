@@ -1,7 +1,7 @@
 import sqlite3
 
 from constants import MAX_LINE_WIDTH, WORDS_DB
-from utils import create_words_db, highlight
+from utils import highlight
 from word import Word
 
 
