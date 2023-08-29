@@ -27,24 +27,28 @@ def create_db(db_path):
         cursor.execute(
             """
             CREATE TABLE words (
-                word_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                word TEXT UNIQUE
+                word_id INTEGER PRIMARY KEY,
+                word TEXT UNIQUE NOT NULL
             )"""
         )
+        cursor.execute("CREATE INDEX word_index ON words(word);")
+
         cursor.execute(
             """
             CREATE TABLE definitions (
-                word_id INTEGER,
-                definition TEXT,
+                word_id INTEGER NOT NULL,
+                definition TEXT NOT NULL,
                 UNIQUE (word_id, definition),
                 FOREIGN KEY(word_id) REFERENCES words(word_id)
             )"""
         )
+        cursor.execute("CREATE INDEX word_id_index ON definitions(word_id);")
+
         cursor.execute(
             """
             CREATE TABLE metadata (
-                key TEXT PRIMARY KEY,
-                value INTEGER
+                key TEXT PRIMARY KEY NOT NULL,
+                value INTEGER NOT NULL
             )"""
         )
 

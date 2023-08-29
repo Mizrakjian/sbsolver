@@ -33,7 +33,11 @@ async def async_batch_fetch(words: list[Word]) -> None:
 
 
 def load_definitions(words: list[Word]) -> None:
-    """Load definitions from WORDS_DB into the list of Word objects."""
+    """Load definitions from WORDS_DB into the list of Word objects. Creates the database if missing."""
+
+    if not WORDS_DB.exists():
+        create_words_db()
+
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 
@@ -82,16 +86,12 @@ def define(words: list[Word]) -> None:
 
     For each word in the list, the function checks if its definition is
     already present in the local db. If not, it fetches the definition
-    using the Datamuse API, updates each definitions attribute in the
+    from an outside API, updates each definitions attribute in the
     Word list, and finally adds new definitions to the db.
-
-    Also creates the database if it isn't found.
 
     Args:
     - words (list[Word]): The list of Word objects to be defined.
     """
-    if not WORDS_DB.exists():
-        create_words_db()
 
     load_definitions(words)
     undefined = [word for word in words if not word.definitions]
