@@ -44,7 +44,7 @@ def grid(words: list[Word]) -> str:
 
 
 def two_letter_list(words: list[Word]) -> str:
-    """Return word counts grouped by their first two letters."""
+    """Return counts of words by their first two letters, grouped by first letter."""
 
     two_letter_counts = Counter(w.text[:2].upper() for w in words)
     sorted_pairs = sorted(two_letter_counts.items())
