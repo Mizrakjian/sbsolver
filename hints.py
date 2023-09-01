@@ -68,12 +68,13 @@ def pangrams(words: list[Word]) -> str:
     pangram_list = [word.text for word in words if word.is_pangram]
     pangram_count = len(pangram_list)
     perfect_count = sum(len(p) == 7 for p in pangram_list)
+
+    perfect = ""
     if pangram_count == perfect_count == 1:
         perfect = " (Perfect)"
     elif pangram_count > 1 and perfect_count:
         perfect = f" ({perfect_count} Perfect)"
-    else:
-        perfect = ""
+
     return f"{pangram_count}{perfect}"
 
 

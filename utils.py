@@ -1,3 +1,4 @@
+import logging
 import sqlite3
 from datetime import datetime
 from textwrap import fill
@@ -5,6 +6,8 @@ from textwrap import fill
 import httpx
 
 from constants import MAX_LINE_WIDTH, WORDLIST_URL, WORDS_DB
+
+logger = logging.getLogger(__name__)
 
 
 def highlight(text: str) -> str:
@@ -15,13 +18,17 @@ def highlight(text: str) -> str:
 def fetch_wordlist() -> list[tuple[str]]:
     """Return list of words from wordgamedictionary.com's TWL06 scrabble word list."""
 
+    logger.info(f"Fetch wordlist from {WORDLIST_URL}")
+
     response = httpx.get(WORDLIST_URL)
     word_list = response.text.split("\n")
     return [(word.strip(),) for word in word_list[2:]]
 
 
-def create_db(db_path):
-    with sqlite3.connect(db_path) as conn:
+def create_db():
+    logger.info("Creating new database")
+
+    with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 
         cursor.execute(
@@ -29,7 +36,8 @@ def create_db(db_path):
             CREATE TABLE words (
                 word_id INTEGER PRIMARY KEY,
                 word TEXT UNIQUE NOT NULL
-            )"""
+            )
+            """
         )
         cursor.execute("CREATE INDEX word_index ON words(word);")
 
@@ -40,7 +48,8 @@ def create_db(db_path):
                 definition TEXT NOT NULL,
                 UNIQUE (word_id, definition),
                 FOREIGN KEY(word_id) REFERENCES words(word_id)
-            )"""
+            )
+            """
         )
         cursor.execute("CREATE INDEX word_id_index ON definitions(word_id);")
 
@@ -49,12 +58,13 @@ def create_db(db_path):
             CREATE TABLE metadata (
                 key TEXT PRIMARY KEY NOT NULL,
                 value INTEGER NOT NULL
-            )"""
+            )
+            """
         )
 
 
-def populate_db(db_path, word_list):
-    with sqlite3.connect(db_path) as conn:
+def populate_db(word_list):
+    with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
         cursor.executemany("INSERT OR IGNORE INTO words (word) VALUES (?)", word_list)
 
@@ -68,15 +78,13 @@ def populate_db(db_path, word_list):
             [("creation_date", creation_date), ("initial_words_count", max_word_id)],
         )
 
+    logger.info(f"{len(word_list)} words added to database")
+
 
 def create_words_db():
-    print(f"{WORDS_DB} file missing\nCreating new database:")
-    create_db(WORDS_DB)
-    print("  done\nFetching wordlist:")
+    create_db()
     word_list = fetch_wordlist()
-    print("  done\nPopulating database:")
-    populate_db(WORDS_DB, word_list)
-    print(f"  {len(word_list)} words added\n")
+    populate_db(word_list)
 
 
 def show_new_words():

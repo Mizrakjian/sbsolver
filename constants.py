@@ -1,5 +1,7 @@
 from pathlib import Path
 
+VERSION = "1.5.0"
+
 GAME_URL = "https://www.nytimes.com/puzzles/spelling-bee"
 WORDLIST_URL = "https://www.wordgamedictionary.com/twl06/download/twl06.txt"
 DATAMUSE_URL = "https://api.datamuse.com/words"

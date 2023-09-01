@@ -24,14 +24,19 @@ TODO:
 Created on Wed Apr 27 2020
 """
 
+import logging
 from argparse import ArgumentParser
 
+import logging_config
+from constants import VERSION
 from definitions import define
 from game_data import game_data
 from hints import hints
 from utils import show_db_stats
 from word import Word
 from word_logic import show_words
+
+logger = logging.getLogger(__name__)
 
 
 def parse_args():
@@ -69,7 +74,11 @@ def parse_args():
 
 
 def main():
+    logging_config.setup_logging()
+
     args = parse_args()
+
+    logger.info(f"Start SBSolver version {VERSION} with {args}")
 
     game_history = game_data()
     count = len(game_history) - 1
@@ -96,6 +105,8 @@ def main():
 
     if args.stats:
         show_db_stats()
+
+    logger.info(f"End SBSolver version {VERSION} with {args}")
 
 
 if __name__ == "__main__":
