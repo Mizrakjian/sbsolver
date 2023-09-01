@@ -32,7 +32,7 @@ from constants import VERSION
 from definitions import define
 from game_data import game_data
 from hints import hints
-from utils import show_db_stats
+from utils import highlight, show_db_stats
 from word import Word
 from word_logic import show_words
 
@@ -77,8 +77,9 @@ def main():
     logging_config.setup_logging()
 
     args = parse_args()
+    formatted_args = ", ".join(f"{key}={value}" for key, value in vars(args).items())
 
-    logger.info(f"Start SBSolver version {VERSION} with {args}")
+    logger.info(f"Start v{VERSION} | {formatted_args}")
 
     game_history = game_data()
     count = len(game_history) - 1
@@ -86,12 +87,13 @@ def main():
     days_ago = args.past
     if days_ago is None or not (0 <= days_ago <= count):
         print(f"There are {count} available past games. The oldest is from {game_history[-1].date}.")
+        logger.info(f"End v{VERSION} | {formatted_args}")
         exit()
 
     puzzle = game_history[days_ago]
     answers = Word.from_list(puzzle.answers)
 
-    print(f"\nSpelling Bee Solver — {puzzle.date}\n")
+    print(f"\n{highlight('Spelling Bee Solver')} — {puzzle.date}\n")
     print(hints(answers, puzzle.letters), "\n")
 
     if args.answers:
@@ -106,7 +108,7 @@ def main():
     if args.stats:
         show_db_stats()
 
-    logger.info(f"End SBSolver version {VERSION} with {args}")
+    logger.info(f"End v{VERSION} | {formatted_args}")
 
 
 if __name__ == "__main__":

@@ -25,7 +25,7 @@ async def async_fetch_defs(word: Word) -> None:
     if response.status_code == 200 and data and (defs := data[0].get("defs")):
         word.definitions = defs
     else:
-        logger.warning(f"Unable to fetch data for {word.text} ({response.status_code=})")
+        logger.warning(f"'{word.text}' data not found, status code:{response.status_code}")
         word.definitions = ["<definition not found>"]
 
 
@@ -74,7 +74,7 @@ def save_definitions(words: list[Word]) -> None:
             [(word.text,) for word in words],
         )
         if words_added := cursor.rowcount:
-            logger.info(f"Words added: {words_added}")
+            logger.info(f"Add {words_added} word(s) to database")
 
         cursor.executemany(
             """

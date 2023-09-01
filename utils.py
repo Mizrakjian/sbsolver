@@ -18,7 +18,7 @@ def highlight(text: str) -> str:
 def fetch_wordlist() -> list[tuple[str]]:
     """Return list of words from wordgamedictionary.com's TWL06 scrabble word list."""
 
-    logger.info(f"Fetch wordlist from {WORDLIST_URL}")
+    logger.info(f"Fetch wordlist")
 
     response = httpx.get(WORDLIST_URL)
     word_list = response.text.split("\n")
@@ -26,7 +26,7 @@ def fetch_wordlist() -> list[tuple[str]]:
 
 
 def create_db():
-    logger.info("Creating new database")
+    logger.info("Create database")
 
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
@@ -64,6 +64,8 @@ def create_db():
 
 
 def populate_db(word_list):
+    logger.info(f"Add {len(word_list)} words to database")
+
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
         cursor.executemany("INSERT OR IGNORE INTO words (word) VALUES (?)", word_list)
@@ -77,8 +79,6 @@ def populate_db(word_list):
             "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
             [("creation_date", creation_date), ("initial_words_count", max_word_id)],
         )
-
-    logger.info(f"{len(word_list)} words added to database")
 
 
 def create_words_db():

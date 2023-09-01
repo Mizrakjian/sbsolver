@@ -19,7 +19,7 @@ class GameData(NamedTuple):
 def game_data() -> list[GameData]:
     """Scrape Spelling Bee data and return list of GameData entries in reverse order."""
 
-    logger.info(f"Fetching from: {GAME_URL}")
+    logger.info("Fetch game data")
 
     page = get(GAME_URL)
     soup = BeautifulSoup(page.content, "html.parser")
