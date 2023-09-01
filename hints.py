@@ -65,15 +65,14 @@ def pangrams(words: list[Word]) -> str:
     A perfect pangram uses all puzzle letters but only once each.
     """
 
-    pangram_list = [word.text for word in words if word.is_pangram]
+    pangram_list = [w.text for w in words if w.is_pangram]
     pangram_count = len(pangram_list)
     perfect_count = sum(len(p) == 7 for p in pangram_list)
 
     perfect = ""
-    if pangram_count == perfect_count == 1:
-        perfect = " (Perfect)"
-    elif pangram_count > 1 and perfect_count:
-        perfect = f" ({perfect_count} Perfect)"
+    if perfect_count:
+        count = f"{perfect_count} " if pangram_count > 1 else ""
+        perfect = f" ({count}Perfect)"
 
     return f"{pangram_count}{perfect}"
 
@@ -85,6 +84,7 @@ def hints(words: list[Word], letters: str) -> str:
     puzzle_letters = " ".join([highlight(center), *outers])
     count = len(words)
     score = sum(w.score for w in words)
+    # Set bingo when all seven puzzle letters are used to start a word.
     bingo = ", Bingo" if len({w.text[0] for w in words}) == 7 else ""
 
     output = [
