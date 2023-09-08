@@ -25,13 +25,13 @@ Created on Wed Apr 27 2020
 """
 
 import logging
-from argparse import ArgumentParser
 
 import logging_config
 from constants import VERSION
 from definitions import define
 from game_data import game_data
 from hints import hints
+from parse_args import parse_args
 from utils import highlight, show_db_stats
 from word import Word
 from word_logic import show_words
@@ -39,47 +39,12 @@ from word_logic import show_words
 logger = logging.getLogger(__name__)
 
 
-def parse_args():
-    parser = ArgumentParser(description="Spelling Bee Solver")
-
-    parser.add_argument(
-        "-a",
-        "--answers",
-        action="store_true",
-        help="show the puzzle answers",
-    )
-    parser.add_argument(
-        "-d",
-        "--define",
-        action="store_true",
-        help="show answer definitions",
-    )
-    parser.add_argument(
-        "-p",
-        "--past",
-        metavar="n",
-        nargs="?",
-        type=int,
-        const=None,
-        default=0,
-        help="Load puzzle from [n] days ago - show available days if [n] is omitted",
-    )
-    parser.add_argument(
-        "-s",
-        "--stats",
-        action="store_true",
-        help="show database stats",
-    )
-    return parser.parse_args()
-
-
 def main():
     logging_config.setup_logging()
 
     args = parse_args()
-    formatted_args = ", ".join(f"{key}={value}" for key, value in vars(args).items())
 
-    logger.info(f"Start v{VERSION} | {formatted_args}")
+    logger.info(f"Start v{VERSION} | {args.formatted}")
 
     game_history = game_data()
     count = len(game_history) - 1
@@ -87,7 +52,7 @@ def main():
     days_ago = args.past
     if days_ago is None or not (0 <= days_ago <= count):
         print(f"There are {count} available past games. The oldest is from {game_history[-1].date}.")
-        logger.info(f"End v{VERSION} | {formatted_args}")
+        logger.info(f"End v{VERSION} | {args.formatted}")
         exit()
 
     puzzle = game_history[days_ago]
@@ -108,7 +73,7 @@ def main():
     if args.stats:
         show_db_stats()
 
-    logger.info(f"End v{VERSION} | {formatted_args}")
+    logger.info(f"End v{VERSION} | {args.formatted}")
 
 
 if __name__ == "__main__":
