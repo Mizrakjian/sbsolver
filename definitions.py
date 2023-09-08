@@ -11,31 +11,30 @@ from word import Word
 logger = logging.getLogger(__name__)
 
 
-async def async_fetch_defs(word: Word) -> None:
-    """Fetch and set the definitions for a given Word object from the Datamuse API."""
-    params = {
-        "sp": word.text,  # spelled-like query
-        "md": "d",  # definitions metadata flag
-        "max": 1,  # fetch one match only
-    }
-    async with AsyncClient() as client:
-        response = await client.get(url=DATAMUSE_URL, params=params)
-
-    data = response.json()
-    if response.status_code == 200 and data and (defs := data[0].get("defs")):
-        word.definitions = defs
-    else:
-        logger.warning(f"'{word.text}' data not found, status code:{response.status_code}")
-        word.definitions = ["<definition not found>"]
-
-
 async def async_batch_fetch(words: list[Word]) -> None:
     """Fetch definitions for the provided list of Word objects asynchronously."""
 
+    async def async_fetch_defs(client: AsyncClient, word: Word) -> None:
+        """Fetch and set the definition for a given Word object using the Datamuse API."""
+        params = {
+            "sp": word.text,  # spelled-like query
+            "md": "d",  # definitions metadata flag
+            "max": 1,  # fetch one match only
+        }
+        response = await client.get(url=DATAMUSE_URL, params=params)
+        data = response.json()
+
+        if response.status_code == 200 and data and (defs := data[0].get("defs")):
+            word.definitions = defs
+        else:
+            logger.warning(f"'{word.text}' data not found, status code:{response.status_code}")
+            word.definitions = ["<definition not found>"]
+
     logging.info(f"Definitions to fetch: {len(words)}")
 
-    batch = (async_fetch_defs(word) for word in words)
-    await asyncio.gather(*batch)
+    async with AsyncClient() as client:
+        batch = (async_fetch_defs(client, w) for w in words)
+        await asyncio.gather(*batch)
 
 
 def load_definitions(words: list[Word]) -> None:
