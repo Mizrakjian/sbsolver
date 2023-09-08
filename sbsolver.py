@@ -32,9 +32,9 @@ from definitions import define
 from game_data import game_data
 from hints import hints
 from parse_args import parse_args
+from show_words import show_words
 from utils import highlight, show_db_stats
 from word import Word
-from word_logic import show_words
 
 logger = logging.getLogger(__name__)
 
