@@ -4,9 +4,12 @@ import sqlite3
 
 from httpx import AsyncClient
 
-from constants import DATAMUSE_URL, WORDS_DB
-from utils import create_words_db
-from word import Word
+from .constants import WORDS_DB
+from .utils import create_words_db
+from .word import Word
+
+DATAMUSE_URL = "https://api.datamuse.com/words"
+
 
 logger = logging.getLogger(__name__)
 

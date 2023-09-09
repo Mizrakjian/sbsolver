@@ -26,15 +26,7 @@ Created on Wed Apr 27 2020
 
 import logging
 
-import logging_config
-from constants import VERSION
-from definitions import define
-from game_data import game_data
-from hints import hints
-from parse_args import parse_args
-from show_words import show_words
-from utils import highlight, show_db_stats
-from word import Word
+from core import VERSION, definitions, hints, logging_config, parse_args, scrape, show_words, utils, word
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +34,11 @@ logger = logging.getLogger(__name__)
 def main():
     logging_config.setup_logging()
 
-    args = parse_args()
+    args = parse_args.parse_args()
 
     logger.info(f"Start v{VERSION} | {args.formatted}")
 
-    game_history = game_data()
+    game_history = scrape.game_data()
     count = len(game_history) - 1
 
     days_ago = args.past
@@ -56,22 +48,22 @@ def main():
         exit()
 
     puzzle = game_history[days_ago]
-    answers = Word.from_list(puzzle.answers)
+    answers = word.Word.from_list(puzzle.answers)
 
-    print(f"\n{highlight('Spelling Bee Solver')} — {puzzle.date}\n")
-    print(hints(answers, puzzle.letters), "\n")
+    print(f"\n{utils.highlight('Spelling Bee Solver')} — {puzzle.date}\n")
+    print(hints.hints(answers, puzzle.letters), "\n")
 
     if args.answers:
-        print(show_words("official answers", answers), "\n")
+        print(show_words.show_words("official answers", answers), "\n")
 
-    define(answers)
+    definitions.define(answers)
 
     if args.define:
-        for word in answers:
-            print(word.with_definitions(), "\n")
+        for answer_word in answers:
+            print(answer_word.with_definitions(), "\n")
 
     if args.stats:
-        show_db_stats()
+        utils.show_db_stats()
 
     logger.info(f"End v{VERSION} | {args.formatted}")
 

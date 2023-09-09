@@ -4,8 +4,8 @@ hints.py: functions to display Spelling Bee puzzle statistics and hints.
 from collections import Counter, defaultdict
 from itertools import groupby
 
-from utils import highlight
-from word import Word
+from .utils import highlight
+from .word import Word
 
 
 def grid(words: list[Word]) -> str:

@@ -1,8 +1,9 @@
 from textwrap import fill
 from typing import Iterable
 
-from constants import MAX_LINE_WIDTH
-from utils import highlight
+from core import MAX_LINE_WIDTH
+
+from .utils import highlight
 
 
 class Word:

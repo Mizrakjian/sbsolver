@@ -1,6 +1,7 @@
-from constants import MAX_LINE_WIDTH
-from utils import highlight
-from word import Word
+from core import MAX_LINE_WIDTH
+
+from .utils import highlight
+from .word import Word
 
 
 def show_words(desc: str, words: list[Word]) -> str:

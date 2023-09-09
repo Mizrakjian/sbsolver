@@ -5,7 +5,7 @@ from typing import NamedTuple
 from bs4 import BeautifulSoup
 from httpx import get
 
-from constants import GAME_URL
+GAME_URL = "https://www.nytimes.com/puzzles/spelling-bee"
 
 logger = logging.getLogger(__name__)
 
