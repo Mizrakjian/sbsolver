@@ -5,6 +5,8 @@ from typing import NamedTuple
 from bs4 import BeautifulSoup
 from httpx import get
 
+from .word import Word
+
 GAME_URL = "https://www.nytimes.com/puzzles/spelling-bee"
 
 logger = logging.getLogger(__name__)
@@ -13,7 +15,7 @@ logger = logging.getLogger(__name__)
 class GameData(NamedTuple):
     date: str
     letters: str
-    answers: list[str]
+    answers: list[Word]
 
 
 def game_data() -> list[GameData]:
@@ -30,7 +32,7 @@ def game_data() -> list[GameData]:
         GameData(
             date=game["displayDate"],
             letters="".join(game["validLetters"]),
-            answers=game["answers"],
+            answers=Word.from_list(game["answers"]),
         )
         for week in ("lastWeek", "thisWeek")
         for game in data["pastPuzzles"][week]

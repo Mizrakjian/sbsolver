@@ -4,7 +4,8 @@ import sqlite3
 
 from httpx import AsyncClient
 
-from .constants import WORDS_DB
+from core import WORDS_DB
+
 from .utils import create_words_db
 from .word import Word
 
@@ -67,7 +68,7 @@ def load_definitions(words: list[Word]) -> None:
 
 
 def save_definitions(words: list[Word]) -> None:
-    """Save new words and/or definitions from the list of Word objects to WORDS_DB."""
+    """Save new words and definitions from the list of Word objects to WORDS_DB."""
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 
@@ -91,15 +92,13 @@ def save_definitions(words: list[Word]) -> None:
 
 def define(words: list[Word]) -> None:
     """
-    Define a list of words and update the local db.
-
-    For each word in the list, the function checks if its definition is
-    already present in the local db. If not, it fetches the definition
-    from an outside API, updates each definitions attribute in the
-    Word list, and finally adds new definitions to the db.
+    Load, fetch, and save definitions for each Word.
+    * Load definitions from WORDS_DB into Word objects.
+    * Fetch missing definitions from the Datamuse API.
+    * Save new words and definitions back into WORDS_DB.
 
     Args:
-    - words (list[Word]): The list of Word objects to be defined.
+    - words (list[Word]): List of Word objects to define.
     """
 
     load_definitions(words)

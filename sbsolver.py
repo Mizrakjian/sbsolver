@@ -26,19 +26,26 @@ Created on Wed Apr 27 2020
 
 import logging
 
-from core import VERSION, definitions, hints, logging_config, parse_args, scrape, show_words, utils, word
+from core import VERSION
+from core.definitions import define
+from core.hints import hints
+from core.logging_config import setup_logging
+from core.parse_args import parse_args
+from core.scrape import game_data
+from core.show_words import show_words
+from core.utils import highlight, show_db_stats
 
 logger = logging.getLogger(__name__)
 
 
 def main():
-    logging_config.setup_logging()
+    setup_logging()
 
-    args = parse_args.parse_args()
+    args = parse_args()
 
     logger.info(f"Start v{VERSION} | {args.formatted}")
 
-    game_history = scrape.game_data()
+    game_history = game_data()
     count = len(game_history) - 1
 
     days_ago = args.past
@@ -48,22 +55,20 @@ def main():
         exit()
 
     puzzle = game_history[days_ago]
-    answers = word.Word.from_list(puzzle.answers)
+    define(puzzle.answers)
 
-    print(f"\n{utils.highlight('Spelling Bee Solver')} — {puzzle.date}\n")
-    print(hints.hints(answers, puzzle.letters), "\n")
+    print(f"\n{highlight('Spelling Bee Solver')} — {puzzle.date}\n")
+    print(hints(puzzle.answers, puzzle.letters), "\n")
 
     if args.answers:
-        print(show_words.show_words("official answers", answers), "\n")
-
-    definitions.define(answers)
+        print(show_words("official answers", puzzle.answers), "\n")
 
     if args.define:
-        for answer_word in answers:
-            print(answer_word.with_definitions(), "\n")
+        for word in puzzle.answers:
+            print(word.with_definitions(), "\n")
 
     if args.stats:
-        utils.show_db_stats()
+        show_db_stats()
 
     logger.info(f"End v{VERSION} | {args.formatted}")
 

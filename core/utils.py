@@ -5,9 +5,7 @@ from textwrap import fill
 
 import httpx
 
-from core import MAX_LINE_WIDTH
-
-from .constants import WORDS_DB
+from core import MAX_LINE_WIDTH, WORDS_DB
 
 WORDLIST_URL = "https://www.wordgamedictionary.com/twl06/download/twl06.txt"
 
