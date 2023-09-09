@@ -9,7 +9,7 @@ from core import MAX_LINE_WIDTH, WORDS_DB
 
 WORDLIST_URL = "https://www.wordgamedictionary.com/twl06/download/twl06.txt"
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 def highlight(text: str) -> str:
@@ -20,7 +20,7 @@ def highlight(text: str) -> str:
 def fetch_wordlist() -> list[tuple[str]]:
     """Return list of words from wordgamedictionary.com's TWL06 scrabble word list."""
 
-    logger.info(f"Fetch wordlist")
+    log.info(f"Fetch wordlist")
 
     response = httpx.get(WORDLIST_URL)
     word_list = response.text.split("\n")
@@ -28,7 +28,11 @@ def fetch_wordlist() -> list[tuple[str]]:
 
 
 def create_db():
-    logger.info("Create database")
+    if not WORDS_DB.parent.exists():
+        log.info(f"Create directory: {WORDS_DB.parent}")
+        WORDS_DB.parent.mkdir(parents=True, exist_ok=True)
+
+    log.info("Create database")
 
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
@@ -66,7 +70,7 @@ def create_db():
 
 
 def populate_db(word_list):
-    logger.info(f"Add {len(word_list)} words to database")
+    log.info(f"Add {len(word_list)} words to database")
 
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
@@ -106,6 +110,14 @@ def show_new_words():
 
 
 def show_db_stats() -> None:
+    def format_word_list(words: list[str]) -> str:
+        return fill(
+            " ".join(word for (word,) in words),
+            width=MAX_LINE_WIDTH,
+            initial_indent="    ",
+            subsequent_indent="    ",
+        )
+
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 
@@ -122,11 +134,11 @@ def show_db_stats() -> None:
 
         cursor.execute(
             """
-        SELECT w.word
-        FROM words w
-        INNER JOIN definitions d ON d.word_id = w.word_id
-        WHERE d.definition = "<definition not found>"
-        """
+            SELECT w.word
+            FROM words w
+            INNER JOIN definitions d ON d.word_id = w.word_id
+            WHERE d.definition = "<definition not found>"
+            """
         )
         defs_not_found = cursor.fetchall()
 
@@ -136,18 +148,8 @@ def show_db_stats() -> None:
         cursor.execute("SELECT COUNT(*) FROM definitions")
         (total_definitions,) = cursor.fetchone()
 
-    added_words = fill(
-        " ".join(word for (word,) in new_words),
-        width=MAX_LINE_WIDTH,
-        initial_indent="    ",
-        subsequent_indent="    ",
-    )
-    bad_defs = fill(
-        " ".join(word for (word,) in defs_not_found),
-        width=MAX_LINE_WIDTH,
-        initial_indent="    ",
-        subsequent_indent="    ",
-    )
+    added_words = format_word_list(new_words)
+    bad_defs = format_word_list(defs_not_found)
 
     print(
         f"Stats for {WORDS_DB}:\n"

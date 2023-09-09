@@ -9,7 +9,7 @@ from .word import Word
 
 GAME_URL = "https://www.nytimes.com/puzzles/spelling-bee"
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class GameData(NamedTuple):
@@ -21,7 +21,7 @@ class GameData(NamedTuple):
 def game_data() -> list[GameData]:
     """Scrape Spelling Bee data and return list of GameData entries in reverse order."""
 
-    logger.info("Fetch game data")
+    log.info("Fetch game data")
 
     page = get(GAME_URL)
     soup = BeautifulSoup(page.content, "html.parser")

@@ -35,7 +35,7 @@ from core.scrape import game_data
 from core.show_words import show_words
 from core.utils import highlight, show_db_stats
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 def main():
@@ -43,7 +43,7 @@ def main():
 
     args = parse_args()
 
-    logger.info(f"Start v{VERSION} | {args.formatted}")
+    log.info(f"Start v{VERSION} | {args.formatted}")
 
     game_history = game_data()
     count = len(game_history) - 1
@@ -51,8 +51,7 @@ def main():
     days_ago = args.past
     if days_ago is None or not (0 <= days_ago <= count):
         print(f"There are {count} available past games. The oldest is from {game_history[-1].date}.")
-        logger.info(f"End v{VERSION} | {args.formatted}")
-        exit()
+        return
 
     puzzle = game_history[days_ago]
     define(puzzle.answers)
@@ -70,8 +69,7 @@ def main():
     if args.stats:
         show_db_stats()
 
-    logger.info(f"End v{VERSION} | {args.formatted}")
-
 
 if __name__ == "__main__":
     main()
+    log.info(f"End v{VERSION}")

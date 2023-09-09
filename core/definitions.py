@@ -12,7 +12,7 @@ from .word import Word
 DATAMUSE_URL = "https://api.datamuse.com/words"
 
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 async def async_batch_fetch(words: list[Word]) -> None:
@@ -31,10 +31,10 @@ async def async_batch_fetch(words: list[Word]) -> None:
         if response.status_code == 200 and data and (defs := data[0].get("defs")):
             word.definitions = defs
         else:
-            logger.warning(f"'{word.text}' data not found, status code:{response.status_code}")
+            log.warning(f"'{word.text}' data not found, status code:{response.status_code}")
             word.definitions = ["<definition not found>"]
 
-    logging.info(f"Definitions to fetch: {len(words)}")
+    log.info(f"Definitions to fetch: {len(words)}")
 
     async with AsyncClient() as client:
         batch = (async_fetch_defs(client, w) for w in words)
@@ -45,7 +45,7 @@ def load_definitions(words: list[Word]) -> None:
     """Load definitions from WORDS_DB into the list of Word objects. Creates the database if missing."""
 
     if not WORDS_DB.exists():
-        logger.warning(f"{WORDS_DB} file missing")
+        log.warning(f"{WORDS_DB} file missing")
         create_words_db()
 
     with sqlite3.connect(WORDS_DB) as conn:
@@ -77,7 +77,7 @@ def save_definitions(words: list[Word]) -> None:
             [(word.text,) for word in words],
         )
         if words_added := cursor.rowcount:
-            logger.info(f"Add {words_added} word(s) to database")
+            log.info(f"Add {words_added} word(s) to database")
 
         cursor.executemany(
             """
@@ -96,9 +96,6 @@ def define(words: list[Word]) -> None:
     * Load definitions from WORDS_DB into Word objects.
     * Fetch missing definitions from the Datamuse API.
     * Save new words and definitions back into WORDS_DB.
-
-    Args:
-    - words (list[Word]): List of Word objects to define.
     """
 
     load_definitions(words)
