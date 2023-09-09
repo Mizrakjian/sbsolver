@@ -1,8 +1,10 @@
 """
-hints.py: functions to display Spelling Bee puzzle statistics and hints.
+show.py: functions to display Spelling Bee puzzle statistics, hints, and words.
 """
 from collections import Counter, defaultdict
 from itertools import groupby
+
+from core import MAX_LINE_WIDTH
 
 from .utils import highlight
 from .word import Word
@@ -94,3 +96,19 @@ def hints(words: list[Word], letters: str) -> str:
         two_letter_list(words),
     ]
     return "\n\n".join(output)
+
+
+def words(desc: str, words: list[Word]) -> str:
+    """Return count, description, and scored list of words. Highlight pangrams in bold yellow."""
+
+    line_len = 0
+    output = [f"{len(words)} {desc}:\n"]
+    for word in words:
+        scored = f"  {word.text} {word.score}"
+        if line_len + len(scored) > MAX_LINE_WIDTH:
+            output.append("\n")
+            line_len = 0
+        result = f"{highlight(scored)}" if word.is_pangram else scored
+        output.append(result)
+        line_len += len(scored)
+    return "".join(output)

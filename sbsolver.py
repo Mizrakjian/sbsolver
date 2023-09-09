@@ -26,13 +26,11 @@ Created on Wed Apr 27 2020
 
 import logging
 
-from core import VERSION
+from core import VERSION, show
 from core.definitions import define
-from core.hints import hints
 from core.logging_config import setup_logging
 from core.parse_args import parse_args
 from core.scrape import game_data
-from core.show_words import show_words
 from core.utils import highlight, show_db_stats
 
 log = logging.getLogger(__name__)
@@ -57,10 +55,10 @@ def main():
     define(puzzle.answers)
 
     print(f"\n{highlight('Spelling Bee Solver')} — {puzzle.date}\n")
-    print(hints(puzzle.answers, puzzle.letters), "\n")
+    print(show.hints(puzzle.answers, puzzle.letters), "\n")
 
     if args.answers:
-        print(show_words("official answers", puzzle.answers), "\n")
+        print(show.words("official answers", puzzle.answers), "\n")
 
     if args.define:
         for word in puzzle.answers:
