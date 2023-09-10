@@ -112,3 +112,8 @@ def words(desc: str, words: list[Word]) -> str:
         output.append(result)
         line_len += len(scored)
     return "".join(output)
+
+
+def definitions(words: list[Word]) -> str:
+    """Return string of words and definitions separated by \n."""
+    return "\n\n".join(w.with_definitions() for w in words)

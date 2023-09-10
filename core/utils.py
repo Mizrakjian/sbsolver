@@ -17,6 +17,17 @@ def highlight(text: str) -> str:
     return f"\033[1;93m{text}\033[0m"
 
 
+def wrap_text(text: str, indent: int = 2) -> str:
+    """Return MAX_LINE_WIDTH wrapped and indented text."""
+
+    return fill(
+        text,
+        width=MAX_LINE_WIDTH,
+        initial_indent=" " * indent,
+        subsequent_indent=" " * indent,
+    )
+
+
 def fetch_wordlist() -> list[tuple[str]]:
     """Return list of words from wordgamedictionary.com's TWL06 scrabble word list."""
 
@@ -106,54 +117,48 @@ def show_new_words():
         new_words = Word.from_list(word for (word,) in cursor)
         define(new_words)
         for word in new_words:
-            print(word.with_definitions())
+            print(word.with_definitions(), "\n")
 
 
 def show_db_stats() -> None:
-    def format_word_list(words: list[str]) -> str:
-        return fill(
-            " ".join(word for (word,) in words),
-            width=MAX_LINE_WIDTH,
-            initial_indent="    ",
-            subsequent_indent="    ",
-        )
-
     with sqlite3.connect(WORDS_DB) as conn:
         cursor = conn.cursor()
 
-        cursor.execute("SELECT value FROM metadata WHERE key = ?", ("creation_date",))
-        (creation_date,) = cursor.fetchone()
+        cursor.execute("SELECT key, value FROM metadata")
+        metadata = dict(cursor)
+        creation_date = datetime.fromtimestamp(metadata["creation_date"])
+        initial_words_count = metadata["initial_words_count"]
 
-        cursor.execute("SELECT COUNT(*) FROM words")
-        (total_words,) = cursor.fetchone()
+        cursor.execute(
+            """
+            SELECT COUNT(*) FROM words
+            UNION ALL
+            SELECT COUNT(DISTINCT word_id) FROM definitions
+            UNION ALL
+            SELECT COUNT(*) FROM definitions
+            """
+        )
+        total_words, defined_words, total_definitions = (item for (item,) in cursor)
 
-        cursor.execute("SELECT value FROM metadata WHERE key = 'initial_words_count'")
-        (initial_words_count,) = cursor.fetchone()
         cursor.execute("SELECT word FROM words WHERE word_id > ?", (initial_words_count,))
-        new_words = cursor.fetchall()
+        new_words = [w for (w,) in cursor]
 
         cursor.execute(
             """
             SELECT w.word
             FROM words w
-            INNER JOIN definitions d ON d.word_id = w.word_id
+            JOIN definitions d ON d.word_id = w.word_id
             WHERE d.definition = "<definition not found>"
             """
         )
-        defs_not_found = cursor.fetchall()
+        defs_not_found = [w for (w,) in cursor]
 
-        cursor.execute("SELECT COUNT(DISTINCT word_id) FROM definitions")
-        (defined_words,) = cursor.fetchone()
-
-        cursor.execute("SELECT COUNT(*) FROM definitions")
-        (total_definitions,) = cursor.fetchone()
-
-    added_words = format_word_list(new_words)
-    bad_defs = format_word_list(defs_not_found)
+    added_words = wrap_text(" ".join(new_words), indent=4)
+    bad_defs = wrap_text(" ".join(defs_not_found), indent=4)
 
     print(
         f"Stats for {WORDS_DB}:\n"
-        f"  Creation date: {datetime.fromtimestamp(creation_date)}\n"
+        f"  Creation date: {creation_date}\n"
         f"  Total words: {total_words}\n"
         f"  Added words: {len(new_words)}\n{added_words}\n"
         f"  Empty definitions: {len(defs_not_found)}\n{bad_defs}\n"

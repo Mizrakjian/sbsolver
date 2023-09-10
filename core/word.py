@@ -1,9 +1,6 @@
-from textwrap import fill
 from typing import Iterable
 
-from core import MAX_LINE_WIDTH
-
-from .utils import highlight
+from .utils import highlight, wrap_text
 
 
 class Word:
@@ -70,19 +67,18 @@ class Word:
             for i, d in enumerate(self.definitions[:max_entries], start=1)
         ).replace("\t", ". ")
 
-        definitions = fill(
-            entry_text,
-            width=MAX_LINE_WIDTH,
-            initial_indent="  ",
-            subsequent_indent="  ",
-        )
+        definitions = wrap_text(entry_text)
         return f"{highlight(self.text) if self.is_pangram else self.text}\n{definitions}"
 
     def __repr__(self):
         return f"Word('{self.text}', definitions={self.definitions})"
 
     def __str__(self):
-        return f"{self.with_definitions()}"
+        return (
+            f"{self.text}, "
+            f"{len(self.definitions)} definition(s), "
+            f"score = {self.score}{', pangram' if self.is_pangram else ''}"
+        )
 
     def __lt__(self, other: "Word") -> bool:
         return self.text < other.text
