@@ -6,7 +6,7 @@ from itertools import groupby
 
 from core import MAX_LINE_WIDTH
 
-from .utils import highlight
+from .utils import highlight, ital
 from .word import Word
 
 
@@ -14,7 +14,7 @@ def grid(words: list[Word]) -> str:
     """
     Generate a grid of word counts by initial letter and length.
 
-    Example:
+    Example output:
             3  4  5  6  Σ
         A:  1  -  1  -  2
         B:  1  -  -  1  2
@@ -27,8 +27,8 @@ def grid(words: list[Word]) -> str:
     lengths, counts = zip(*sorted(length_count.items()))
 
     fmt_join = lambda items: " ".join(f"{i:>2}" for i in items)
-    header = f"     {fmt_join(lengths)}  ∑"
-    footer = f"  ∑: {fmt_join(counts)} {len(words):>2}"
+    header = highlight(f"     {fmt_join(lengths)}  ∑")
+    footer = highlight(f"  ∑: {fmt_join(counts)} {ital(len(words))}")
 
     # Count (first letter, word length) pair frequency
     pairs = Counter((w.text[0], len(w.text)) for w in words)
@@ -38,11 +38,11 @@ def grid(words: list[Word]) -> str:
 
     rows = []
     for letter, length_counts in by_letter.items():
-        counts = " ".join(f"{length_counts.get(l, '-'):>2}" for l in lengths)
+        cells = (length_counts.get(l, "-") for l in lengths)
         total = f"{sum(length_counts.values()):>2}"
-        rows.append(f"  {highlight(letter.upper())}: {counts} {highlight(total)}")
+        rows.append(f"  {highlight(letter.upper())}: {fmt_join(cells)} {highlight(total)}")
 
-    return "\n".join([highlight(header), *rows, highlight(footer)])
+    return "\n".join([header, *rows, footer])
 
 
 def two_letter_list(words: list[Word]) -> str:
@@ -63,8 +63,8 @@ def pangrams(words: list[Word]) -> str:
     """
     Return the count of pangrams and perfect pangrams.
 
-    A pangram uses all puzzle letters.
-    A perfect pangram uses all puzzle letters but only once each.
+    Pangrams use all 7 puzzle letters at least once.
+    Perfect pangrams are 7 letters long.
     """
 
     pangram_list = [w.text for w in words if w.is_pangram]
@@ -115,5 +115,5 @@ def words(desc: str, words: list[Word]) -> str:
 
 
 def definitions(words: list[Word]) -> str:
-    """Return string of words and definitions separated by \n."""
+    """Return string of word texts and definitions separated by \n\n."""
     return "\n\n".join(w.with_definitions() for w in words)

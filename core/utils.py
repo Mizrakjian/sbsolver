@@ -12,9 +12,14 @@ WORDLIST_URL = "https://www.wordgamedictionary.com/twl06/download/twl06.txt"
 log = logging.getLogger(__name__)
 
 
-def highlight(text: str) -> str:
-    """Return highlighted text with ANSI codes for bold and yellow."""
+def highlight(text) -> str:
+    """Return highlighted text using ANSI codes for bold and yellow."""
     return f"\033[1;93m{text}\033[0m"
+
+
+def ital(text) -> str:
+    """Return italicized text using ANSI codes."""
+    return f"\033[3m{text}\033[0m"
 
 
 def wrap_text(text: str, indent: int = 2) -> str:
