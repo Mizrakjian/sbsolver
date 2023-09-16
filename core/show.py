@@ -1,8 +1,10 @@
 """
 show.py: functions to display Spelling Bee puzzle statistics, hints, and words.
 """
+import random
 from collections import Counter, defaultdict
 from itertools import groupby
+from textwrap import fill
 
 from core import MAX_LINE_WIDTH
 
@@ -96,6 +98,30 @@ def hints(words: list[Word], letters: str) -> str:
         two_letter_list(words),
     ]
     return "\n\n".join(output)
+
+
+def definition_hints(words: list[Word]) -> str:
+    """
+    Generate hints for each word, sorted by the word's text.
+
+    Each hint will display the first two letters, the length of the word,
+    and a random definition that doesn't contain the word itself.
+    """
+    hints = []
+    for word in sorted(words):
+        # Choose a random definition that doesn't contain the word itself
+        valid_definitions = [d for d in word.definitions if word.text not in d]
+        if valid_definitions:
+            _, hint = random.choice(valid_definitions).split("\t")
+        else:
+            hint = "No definition available without the word itself."
+
+        pair = word.text[:2].upper()
+        entry = f"{pair}{len(word.text):>2} {hint}"
+
+        hints.append(fill(entry, MAX_LINE_WIDTH, subsequent_indent=" " * 5))
+
+    return "\n".join(hints)
 
 
 def words(desc: str, words: list[Word]) -> str:

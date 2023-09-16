@@ -17,6 +17,11 @@ def parse_args():
         help="show answer definitions",
     )
     parser.add_argument(
+        "--hints",
+        action="store_true",
+        help="show list of hints",
+    )
+    parser.add_argument(
         "-p",
         "--past",
         metavar="n",

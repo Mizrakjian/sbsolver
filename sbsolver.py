@@ -57,6 +57,9 @@ def main():
     print(f"\n{highlight('Spelling Bee Solver')} v{VERSION} — {puzzle.date}\n")
     print(show.hints(puzzle.answers, puzzle.letters), "\n")
 
+    if args.hints:
+        print(show.definition_hints(puzzle.answers), "\n")
+
     if args.answers:
         print(show.words("official answers", puzzle.answers), "\n")
 
