@@ -8,18 +8,22 @@ import httpx
 from core import MAX_LINE_WIDTH, WORDS_DB
 
 WORDLIST_URL = "https://www.wordgamedictionary.com/twl06/download/twl06.txt"
+ESC = "\x1b"
+BOLD_AND_YELLOW = f"{ESC}[1;93m"
+ITALIC = f"{ESC}[3m"
+RESET = f"{ESC}[0m"
 
 log = logging.getLogger(__name__)
 
 
 def highlight(text) -> str:
     """Return highlighted text using ANSI codes for bold and yellow."""
-    return f"\033[1;93m{text}\033[0m"
+    return f"{BOLD_AND_YELLOW}{text}{RESET}"
 
 
 def ital(text) -> str:
     """Return italicized text using ANSI codes."""
-    return f"\033[3m{text}\033[0m"
+    return f"{ITALIC}{text}{RESET}"
 
 
 def wrap_text(text: str, indent: int = 2) -> str:

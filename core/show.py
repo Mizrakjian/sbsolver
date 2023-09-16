@@ -53,7 +53,7 @@ def two_letter_list(words: list[Word]) -> str:
     first_letter = lambda x: x[0][0]
 
     groups = [
-        "  " + " ".join(f"{letters}-{count}" for letters, count in group)
+        f"  {' '.join(f'{pair}-{count}' for pair, count in group)}"
         for _, group in groupby(sorted_pairs, key=first_letter)
     ]
     return "\n".join(["Two letter list:", *groups])

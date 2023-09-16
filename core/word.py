@@ -4,26 +4,7 @@ from .utils import highlight, wrap_text
 
 
 class Word:
-    """
-    Represent a word with its associated definitions, score, and pangram status.
-
-    Attributes / properties:
-        text (str): The word in lowercase.
-        definitions (list[str]): A list of definitions associated with the word.
-        is_pangram (bool): True if the word uses all 7 puzzle letters.
-        score (int): The score of the word based on its length and pangram status.
-
-    Methods:
-        from_list(words: list[str]) -> list[Word]:
-            Class method to create a list of Word objects from a list of strings.
-
-        with_definitions(max_entries: int = 4) -> str:
-            Return the word along with its wrapped, formatted definitions up to a specified limit.
-
-    Usage:
-        word_obj = Word("example", ["a representative form", "a model"])
-        print(word_obj)  # Outputs the word with definitions and score.
-    """
+    """Represent a word in Spelling Bee with its associated definitions, score, and pangram status."""
 
     def __init__(self, text: str, definitions: list[str] | None = None):
         self.text = text.lower()
@@ -44,10 +25,12 @@ class Word:
 
     @property
     def is_pangram(self) -> bool:
+        """Return True if word uses all 7 puzzle letters."""
         return self._is_pangram
 
     @property
     def score(self) -> int:
+        """Return word score."""
         return self._score
 
     @classmethod
@@ -56,11 +39,7 @@ class Word:
         return [cls(word) for word in words]
 
     def with_definitions(self, max_entries: int = 4) -> str:
-        """
-        Return word text with wrapped, formatted definitions as a str.
-
-        max_entries (int, optional): The maximum number of definitions to use. Defaults to 4.
-        """
+        """Return word text with wrapped, formatted definitions as a str."""
         entry_text = "".join(
             f"{i}. {d}" if len(self.definitions) > 1 else d
             for i, d in enumerate(self.definitions[:max_entries], start=1)
