@@ -110,7 +110,12 @@ def definition_hints(words: list[Word]) -> str:
     hints = []
     for word in sorted(words):
         # Choose a random definition that doesn't contain the word itself
-        valid_definitions = [d for d in word.definitions if word.text not in d]
+        valid_definitions = [
+            definition
+            for definition in word.definitions
+            if word.text not in definition
+            if definition != "<definition not found>"
+        ]
         if valid_definitions:
             _, hint = random.choice(valid_definitions).split("\t")
         else:
