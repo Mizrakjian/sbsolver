@@ -1,6 +1,7 @@
 """
 show.py: functions to display Spelling Bee puzzle statistics, hints, and words.
 """
+
 import random
 from collections import Counter, defaultdict
 from itertools import groupby
@@ -113,7 +114,7 @@ def definition_hints(words: list[Word]) -> str:
         valid_definitions = [
             definition
             for definition in word.definitions
-            if word.text not in definition
+            if word.text not in definition.lower()
             if definition != "<definition not found>"
         ]
         if valid_definitions:
