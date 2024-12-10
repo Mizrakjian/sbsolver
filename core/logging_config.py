@@ -9,3 +9,7 @@ def setup_logging():
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
     root_logger.addHandler(file_handler)
+
+    # Suppress overly verbose logging from external libraries
+    for library in ["httpx", "httpcore", "hpack", "asyncio"]:
+        logging.getLogger(library).setLevel(logging.WARNING)
